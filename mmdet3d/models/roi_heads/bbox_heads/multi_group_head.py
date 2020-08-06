@@ -315,6 +315,7 @@ class CenterHead(nn.Module):
             ],
             tasks=[],
             train_cfg=None,
+            test_cfg=None,
             dataset='nuscenes',
             weight=0.25,
             code_weights=[],
@@ -388,6 +389,9 @@ class CenterHead(nn.Module):
                         heads,
                         init_bias=init_bias,
                         final_kernel=3))
+
+    def init_weights(self):
+        pass
 
     def forward(self, x):
         """Forward function for CenterPoint.

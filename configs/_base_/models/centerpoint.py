@@ -1,13 +1,12 @@
 voxel_size = [0.25, 0.25, 8]
 model = dict(
-    type='MVXFasterRCNN',
+    type='CenterPointPP',
     pts_voxel_layer=dict(
         max_num_points=64,
         point_cloud_range=[-51.2, -51.2, -5.0, 51.2, 51.2, 3.0],
         voxel_size=voxel_size,
         max_voxels=(30000, 40000)),
-    pts_voxel_encoder=dict(type='HardSimpleVFE', num_features=5),
-    pts_middle_encoder=dict(
+    pts_voxel_encoder=dict(
         type='PillarFeatureNet',
         in_channels=5,
         feat_channels=[64],
@@ -16,6 +15,8 @@ model = dict(
         point_cloud_range=(-51.2, -51.2, -5.0, 51.2, 51.2, 3.0),
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
     ),
+    pts_middle_encoder=dict(
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
         type='SECOND',
         in_channels=64,
@@ -58,12 +59,22 @@ model = dict(
         dcn_head=True))
 # model training and testing settings
 train_cfg = dict(
-    grid_size=[1024, 1024, 40],
-    point_cloud_range=[-51.2, -51.2, -5., 51.2, 51.2, 3.],
-    voxel_size=[0.1, 0.1, 0.2],
-    out_size_factor=8,
-    dense_reg=1,
-    gaussian_overlap=0.1,
-    max_objs=500,
-    min_radius=2,
-    no_log=False)
+    pts=dict(
+        grid_size=[1024, 1024, 40],
+        point_cloud_range=[-51.2, -51.2, -5., 51.2, 51.2, 3.],
+        voxel_size=[0.1, 0.1, 0.2],
+        out_size_factor=8,
+        dense_reg=1,
+        gaussian_overlap=0.1,
+        max_objs=500,
+        min_radius=2,
+        no_log=False))
+test_cfg = dict(
+    pts=dict(
+        use_rotate_nms=True,
+        nms_across_levels=False,
+        nms_pre=1000,
+        nms_thr=0.2,
+        score_thr=0.05,
+        min_bbox_size=0,
+        max_num=500))
