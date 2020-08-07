@@ -647,15 +647,16 @@ class CenterHead(nn.Module):
         rets = []
         for task_id, preds_dict in enumerate(preds_dicts):
             # heatmap focal loss
-            preds_dict['hm'] = self._sigmoid(preds_dict['hm'])
-            hm_loss = self.crit(preds_dict['hm'], hms[task_id])
+            preds_dict[0]['hm'] = self._sigmoid(preds_dict[0]['hm'])
+            hm_loss = self.crit(preds_dict[0]['hm'], hms[task_id])
 
             target_box = anno_boxes[task_id]
             # reconstruct the anno_box from multiple reg heads
             if self.dataset == 'nuscenes':
-                preds_dict['anno_box'] = torch.cat(
-                    (preds_dict['reg'], preds_dict['height'],
-                     preds_dict['dim'], preds_dict['vel'], preds_dict['rot']),
+                preds_dict[0]['anno_box'] = torch.cat(
+                    (preds_dict[0]['reg'], preds_dict[0]['height'],
+                     preds_dict[0]['dim'], preds_dict[0]['vel'],
+                     preds_dict[0]['rot']),
                     dim=1)
             else:
                 raise NotImplementedError()
@@ -665,7 +666,7 @@ class CenterHead(nn.Module):
 
             # Regression loss for dimension, offset, height, rotation
             ind = inds[task_id]
-            pred = preds_dict['anno_box'].permute(0, 2, 3, 1).contiguous()
+            pred = preds_dict[0]['anno_box'].permute(0, 2, 3, 1).contiguous()
             pred = pred.view(pred.size(0), -1, pred.size(3))
             pred = self._gather_feat(pred, ind)
             mask = torch.unsqueeze(masks[task_id], -1).expand(pred.size())
