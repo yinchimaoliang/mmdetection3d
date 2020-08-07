@@ -1,4 +1,5 @@
 import mmcv
+import pdb
 import torch
 from mmcv.parallel import DataContainer as DC
 from os import path as osp
@@ -302,10 +303,10 @@ class CenterPointPP(Base3DDetector):
         Returns:
             dict: Losses of each branch.
         """
+        pdb.set_trace()
         outs = self.pts_bbox_head(pts_feats)
-        loss_inputs = outs + (gt_bboxes_3d, gt_labels_3d, img_metas)
-        losses = self.pts_bbox_head.loss(
-            *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        loss_inputs = [gt_bboxes_3d, gt_labels_3d, outs]
+        losses = self.pts_bbox_head.loss(*loss_inputs)
         return losses
 
     def forward_img_train(self,

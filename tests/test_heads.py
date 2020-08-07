@@ -547,7 +547,7 @@ def test_dcn_center_head():
     dcn_center_head = build_head(dcn_center_head_cfg).cuda()
 
     x = torch.rand([2, 512, 128, 128]).cuda()
-    output = dcn_center_head(x)
+    output = dcn_center_head([x])
     for i in range(6):
         assert output[i]['reg'].shape == torch.Size([2, 2, 128, 128])
         assert output[i]['height'].shape == torch.Size([2, 1, 128, 128])

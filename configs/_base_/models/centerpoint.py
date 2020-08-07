@@ -36,7 +36,7 @@ model = dict(
     pts_bbox_head=dict(
         type='CenterHead',
         mode='3d',
-        in_channels=sum([256, 256]),
+        in_channels=sum([128, 128, 128]),
         tasks=[
             dict(num_class=1, class_names=['car']),
             dict(num_class=2, class_names=['truck', 'construction_vehicle']),
