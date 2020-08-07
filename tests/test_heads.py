@@ -491,7 +491,7 @@ def test_center_head():
     center_head = build_head(center_head_cfg)
 
     x = torch.rand([2, 512, 128, 128])
-    output = center_head(x)
+    output = center_head([x])
     for i in range(6):
         assert output[i]['reg'].shape == torch.Size([2, 2, 128, 128])
         assert output[i]['height'].shape == torch.Size([2, 1, 128, 128])
