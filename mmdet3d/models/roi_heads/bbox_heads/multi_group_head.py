@@ -5,12 +5,22 @@ from collections import defaultdict
 from mmcv.cnn import build_conv_layer, build_norm_layer, kaiming_init
 from torch import nn
 
-from mmdet.core import multi_apply
+from mmdet3d.core import circle_nms
+from mmdet.core import build_bbox_coder, multi_apply
 from mmdet.models import FeatureAdaption
 from ...builder import HEADS, build_loss
 
 
 def gaussian2D(shape, sigma=1):
+    """Generate gaussian map.
+
+    Args:
+        shape (list[int]): Shape of the map.
+        sigma (float): Sigma to generate gaussian map.
+
+    Returns:
+        np.ndarray: Generated gaussian map.
+    """
     m, n = [(ss - 1.) / 2. for ss in shape]
     y, x = np.ogrid[-m:m + 1, -n:n + 1]
 
@@ -20,6 +30,17 @@ def gaussian2D(shape, sigma=1):
 
 
 def draw_umich_gaussian(heatmap, center, radius, k=1):
+    """Get gaussian masked heatmap.
+
+    Args:
+        heatmap (torch.Tensor): Heatmap to be masked.
+        center (torch.Tensor): Center coord of the heatmap.
+        radius (int): Radius of gausian.
+        K (int): Multiple of masked_gaussian.
+
+    Returns:
+        torch.Tensor: Masked heatmap.
+    """
     diameter = 2 * radius + 1
     gaussian = gaussian2D((diameter, diameter), sigma=diameter / 6)
 
@@ -34,13 +55,21 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
     masked_gaussian = torch.from_numpy(
         gaussian[radius - top:radius + bottom, radius - left:radius +
                  right]).to(heatmap.device).to(torch.float32)
-    if min(masked_gaussian.shape) > 0 and min(
-            masked_heatmap.shape) > 0:  # TODO debug
+    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
         torch.max(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
     return heatmap
 
 
 def gaussian_radius(det_size, min_overlap=0.5):
+    """Get radius of gaussian.
+
+    Args:
+        det_size (tuple[torch.Tensor]): Size of the detection result.
+        min_overlap (float): Gaussian_overlap.
+
+    Returns:
+        torch.Tensor: Computed radius.
+    """
     height, width = det_size
 
     a1 = 1
@@ -88,6 +117,14 @@ class CenterPointFeatureAdaption(FeatureAdaption):
             in_channels, deform_groups * offset_channels, 1, bias=True)
 
     def forward(self, x):
+        """Forward function for CenterPointFeatureAdaption.
+
+        Args:
+            x (torch.Tensor): Input feature with the shape of [B, 64, W, H].
+
+        Returns:
+            torch.Tensor: Output feature with the same shape of input feature.
+        """
         offset = self.conv_offset(x)
         x = self.relu(self.conv_adaption(x, offset))
         return x
@@ -163,19 +200,25 @@ class SepHead(nn.Module):
             self.__setattr__(head, fc)
 
     def forward(self, x):
-        """Forwarrd function for SepHead.
+        """Forward function for SepHead.
 
         Args:
             x (torch.Tensor): Input feature map with the shape of
                 [B, 512, 128, 128].
 
         Returns:
-            dict:   'reg': 2D regression value with the shape of [B, 2, H, W].
-                    'height': Height value with the shape of [B, 1, H, W].
-                    'dim': Size value with the shape of [B, 3, H, W].
-                    'rot': Rotation value with the shape of [B, 2, H, W].
-                    'vel': Velocity value with the shape of [B, 2, H, W].
-                    'hm': Heatmap with the shape of [B, N, H, W].
+            dict:   -reg （torch.Tensor): 2D regression value with the
+                        shape of [B, 2, H, W].
+                    -height (torch.Tensor): Height value with the
+                        shape of [B, 1, H, W].
+                    -dim (torch.Tensor): Size value with the shape
+                        of [B, 3, H, W].
+                    -rot (torch.Tensor): Rotation value with the
+                        shape of [B, 2, H, W].
+                    -vel (torch.Tensor): Velocity value with the
+                        shape of [B, 2, H, W].
+                    -hm (torch.Tensor): Heatmap with the shape of
+                        [B, N, H, W].
         """
         ret_dict = dict()
         for head in self.heads:
@@ -252,19 +295,25 @@ class DCNSepHead(nn.Module):
             in_channels, heads, head_conv=head_conv, final_kernel=final_kernel)
 
     def forward(self, x):
-        """Forwarrd function for DCNSepHead.
+        """Forward function for DCNSepHead.
 
         Args:
             x (torch.Tensor): Input feature map with the shape of
                 [B, 512, 128, 128].
 
         Returns:
-            dict:   'reg': 2D regression value with the shape of [B, 2, H, W].
-                    'height': Height value with the shape of [B, 1, H, W].
-                    'dim': Size value with the shape of [B, 3, H, W].
-                    'rot': Rotation value with the shape of [B, 2, H, W].
-                    'vel': Velocity value with the shape of [B, 2, H, W].
-                    'hm': Heatmap with the shape of [B, N, H, W].
+            dict:   -reg （torch.Tensor): 2D regression value with the
+                        shape of [B, 2, H, W].
+                    -height (torch.Tensor): Height value with the
+                        shape of [B, 1, H, W].
+                    -dim (torch.Tensor): Size value with the shape
+                        of [B, 3, H, W].
+                    -rot (torch.Tensor): Rotation value with the
+                        shape of [B, 2, H, W].
+                    -vel (torch.Tensor): Velocity value with the
+                        shape of [B, 2, H, W].
+                    -hm (torch.Tensor): Heatmap with the shape of
+                        [B, N, H, W].
         """
         center_feat = self.feature_adapt_cls(x)
         reg_feat = self.feature_adapt_reg(x)
@@ -316,6 +365,7 @@ class CenterHead(nn.Module):
             tasks=[],
             train_cfg=None,
             test_cfg=None,
+            bbox_coder=None,
             dataset='nuscenes',
             weight=0.25,
             code_weights=[],
@@ -337,7 +387,7 @@ class CenterHead(nn.Module):
         self.weight = weight  # weight between hm loss and loc loss
         self.dataset = dataset
         self.train_cfg = train_cfg
-
+        self.test_cfg = test_cfg
         self.encode_background_as_zeros = True
         self.use_sigmoid_score = True
         self.in_channels = in_channels
@@ -345,9 +395,12 @@ class CenterHead(nn.Module):
 
         self.crit = build_loss(crit)
         self.crit_reg = build_loss(crit_reg)
+        self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_aux = None
-
-        self.box_n_dim = 9  # change this if your box is different
+        if dataset == 'nuscenes':
+            self.box_n_dim = 9
+        else:
+            raise NotImplementedError
         self.num_anchor_per_locs = [n for n in num_classes]
         self.use_direction_classifier = False
 
@@ -442,15 +495,15 @@ class CenterHead(nn.Module):
         Given feature map and index, return indexed feature map.
 
         Args:
-        feat (torch.tensor): Feature map with the shape of [B, H*W, 10].
-        ind (torch.Tensor): Index of the ground truth boxes with the
-            shape of [B, max_obj].
-        mask (torch.Tensor): Mask of the feature map with the shape
-            of [B, max_obj]. Default: None.
+            feat (torch.tensor): Feature map with the shape of [B, H*W, 10].
+            ind (torch.Tensor): Index of the ground truth boxes with the
+                shape of [B, max_obj].
+            mask (torch.Tensor): Mask of the feature map with the shape
+                of [B, max_obj]. Default: None.
 
-        Returns:
-            torch.Tensor: Feature map after gathering with the shape
-                of [B, max_obj, 10].
+            Returns:
+                torch.Tensor: Feature map after gathering with the shape
+                    of [B, max_obj, 10].
         """
         dim = feat.size(2)
         ind = ind.unsqueeze(2).expand(ind.size(0), ind.size(1), dim)
@@ -694,3 +747,79 @@ class CenterHead(nn.Module):
                 rets_merged[k].append(v)
 
         return rets_merged
+
+    def get_bboxes(self, preds_dicts):
+        """Generate bboxes from bbox head predictions.
+
+        Args:
+            preds_dicts (tuple[list[dict]]): Prediction results.
+
+        Returns:
+            list[dict]: Decoded bbox, scores and labels after nms.
+        """
+        rets = []
+        for task_id, preds_dict in enumerate(preds_dicts):
+            batch_size = preds_dict[0]['hm'].shape[0]
+            batch_hm = preds_dict[0]['hm'].sigmoid_()
+
+            batch_reg = preds_dict[0]['reg']
+            batch_hei = preds_dict[0]['height']
+
+            if not self.test_cfg['no_log']:
+                batch_dim = torch.exp(preds_dict[0]['dim'])
+            else:
+                batch_dim = preds_dict[0]['dim']
+
+            batch_rots = preds_dict[0]['rot'][:, 0].unsqueeze(1)
+            batch_rotc = preds_dict[0]['rot'][:, 1].unsqueeze(1)
+
+            if 'vel' in preds_dict:
+                batch_vel = preds_dict[0]['vel']
+            else:
+                batch_vel = None
+
+            temp = self.bbox_coder.decode(
+                batch_hm,
+                batch_rots,
+                batch_rotc,
+                batch_hei,
+                batch_dim,
+                batch_vel,
+                reg=batch_reg,
+                task_id=task_id)
+            ret_task = []
+            for i in range(batch_size):
+                boxes3d = temp[i]['box3d_lidar']
+                scores = temp[i]['scores']
+                labels = temp[i]['label_preds']
+                centers = boxes3d[:, [0, 1]]
+                boxes = torch.cat([centers, scores.view(-1, 1)], dim=1)
+                keep = circle_nms(
+                    boxes,
+                    self.test_cfg['min_radius'][task_id],
+                    post_max_size=self.test_cfg['post_max_size'])
+                boxes3d = boxes3d[keep]
+                scores = scores[keep]
+                labels = labels[keep]
+                ret = dict(
+                    box3d_lidar=boxes3d, scores=scores, label_preds=labels)
+                ret_task.append(ret)
+            rets.append(ret_task)
+
+        # Merge branches results
+        num_samples = len(rets[0])
+
+        ret_list = []
+        for i in range(num_samples):
+            ret = {}
+            for k in rets[0][i].keys():
+                if k in ['box3d_lidar', 'scores']:
+                    ret[k] = torch.cat([ret[i][k] for ret in rets])
+                elif k in ['label_preds']:
+                    flag = 0
+                    for j, num_class in enumerate(self.num_classes):
+                        rets[j][i][k] += flag
+                        flag += num_class
+                    ret[k] = torch.cat([ret[i][k] for ret in rets])
+            ret_list.append(ret)
+        return ret_list
