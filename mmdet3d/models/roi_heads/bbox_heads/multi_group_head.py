@@ -501,9 +501,9 @@ class CenterHead(nn.Module):
             mask (torch.Tensor): Mask of the feature map with the shape
                 of [B, max_obj]. Default: None.
 
-            Returns:
-                torch.Tensor: Feature map after gathering with the shape
-                    of [B, max_obj, 10].
+        Returns:
+            torch.Tensor: Feature map after gathering with the shape
+                of [B, max_obj, 10].
         """
         dim = feat.size(2)
         ind = ind.unsqueeze(2).expand(ind.size(0), ind.size(1), dim)
@@ -773,7 +773,7 @@ class CenterHead(nn.Module):
             batch_rots = preds_dict[0]['rot'][:, 0].unsqueeze(1)
             batch_rotc = preds_dict[0]['rot'][:, 1].unsqueeze(1)
 
-            if 'vel' in preds_dict:
+            if 'vel' in preds_dict[0]:
                 batch_vel = preds_dict[0]['vel']
             else:
                 batch_vel = None
@@ -811,7 +811,6 @@ class CenterHead(nn.Module):
 
         ret_list = []
         for i in range(num_samples):
-            ret = []
             for k in rets[0][i].keys():
                 if k == 'bboxes':
                     bboxes = img_metas[i]['box_type_3d'](torch.cat([
