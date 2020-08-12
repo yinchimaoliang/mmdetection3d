@@ -63,7 +63,8 @@ model = dict(
             score_threshold=0.1,
             pc_range=[-51.2, -51.2],
             out_size_factor=4,
-            voxel_size=[0.2, 0.2]),
+            voxel_size=[0.2, 0.2],
+            code_size=9),
         dcn_head=True))
 # model training and testing settings
 train_cfg = dict(

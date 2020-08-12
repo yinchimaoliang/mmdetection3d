@@ -383,7 +383,7 @@ class CenterPointPP(Base3DDetector):
         """Test function of point cloud branch."""
         outs = self.pts_bbox_head(x)
         bbox_list = self.pts_bbox_head.get_bboxes(
-            *outs, img_metas, rescale=rescale)
+            outs, img_metas, rescale=rescale)
         bbox_results = [
             bbox3d2result(bboxes, scores, labels)
             for bboxes, scores, labels in bbox_list

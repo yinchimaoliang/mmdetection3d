@@ -25,7 +25,8 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
                  voxel_size,
                  post_center_range=None,
                  K=100,
-                 score_threshold=None):
+                 score_threshold=None,
+                 code_size=9):
 
         self.pc_range = pc_range
         self.out_size_factor = out_size_factor
@@ -33,6 +34,7 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
         self.post_center_range = post_center_range
         self.K = K
         self.score_threshold = score_threshold
+        self.code_size = code_size
 
     def _gather_feat(self, feat, ind, mask=None):
         """Given feats and indexes, returns the gathered feats.
@@ -199,9 +201,9 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
                 scores = final_scores[i, cmask]
                 labels = final_preds[i, cmask]
                 predictions_dict = {
-                    'box3d_lidar': boxes3d,
+                    'bboxes': boxes3d,
                     'scores': scores,
-                    'label_preds': labels
+                    'labels': labels
                 }
 
                 predictions_dicts.append(predictions_dict)
