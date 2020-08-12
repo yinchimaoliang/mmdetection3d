@@ -56,6 +56,14 @@ model = dict(
             'vel': (2, 2)
         },
         share_conv_channel=64,
+        bbox_coder=dict(
+            type='CenterPointBBoxCoder',
+            post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
+            K=500,
+            score_threshold=0.1,
+            pc_range=[-51.2, -51.2],
+            out_size_factor=4,
+            voxel_size=[0.2, 0.2]),
         dcn_head=True))
 # model training and testing settings
 train_cfg = dict(
@@ -71,10 +79,14 @@ train_cfg = dict(
         no_log=False))
 test_cfg = dict(
     pts=dict(
-        use_rotate_nms=True,
-        nms_across_levels=False,
-        nms_pre=1000,
-        nms_thr=0.2,
-        score_thr=0.05,
-        min_bbox_size=0,
-        max_num=500))
+        post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
+        max_per_img=500,
+        max_pool_nms=False,
+        min_radius=[4, 12, 10, 1, 0.85, 0.175],
+        post_max_size=83,
+        score_threshold=0.1,
+        pc_range=[-51.2, -51.2],
+        out_size_factor=4,
+        voxel_size=[0.2, 0.2],
+        circle_nms=True,
+        no_log=False))
