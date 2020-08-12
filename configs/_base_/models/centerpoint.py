@@ -89,5 +89,5 @@ test_cfg = dict(
         pc_range=[-51.2, -51.2],
         out_size_factor=4,
         voxel_size=[0.2, 0.2],
-        circle_nms=True,
+        nms_type='circle',
         no_log=False))
