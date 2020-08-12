@@ -59,6 +59,7 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
 
     def _topk(self, scores, K=40):
         """Get indexes based on scores.
+
         Args:
             scores (torch.Tensor): scores with the shape of [B, N, W, H].
             K (int): Number to be kept.

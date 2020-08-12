@@ -20,11 +20,14 @@ def boxes_iou_bev(boxes_a, boxes_b):
     return ans_iou
 
 
-def nms_gpu(boxes, scores, thresh):
+def nms_gpu(boxes, scores, thresh, pre_maxsize=None, post_max_size=None):
     """
     :param boxes: (N, 5) [x1, y1, x2, y2, ry]
     :param scores: (N)
     :param thresh:
+    :param pre_maxsize:
+    :param post_max_size:
+
     :return:
     """
     # areas = (x2 - x1) * (y2 - y1)
@@ -33,7 +36,11 @@ def nms_gpu(boxes, scores, thresh):
     boxes = boxes[order].contiguous()
 
     keep = torch.LongTensor(boxes.size(0))
+    if pre_maxsize is not None:
+        order = order[:pre_maxsize]
     num_out = iou3d_cuda.nms_gpu(boxes, keep, thresh)
+    if post_max_size is not None:
+        keep = keep[:post_max_size]
     return order[keep[:num_out].cuda()].contiguous()
 
 
