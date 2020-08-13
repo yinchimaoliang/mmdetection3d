@@ -1,4 +1,4 @@
-voxel_size = [0.25, 0.25, 8]
+voxel_size = [0.2, 0.2, 8]
 model = dict(
     type='CenterPoint',
     pts_voxel_layer=dict(
@@ -16,7 +16,7 @@ model = dict(
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
     ),
     pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
+        type='PointPillarsScatter', in_channels=64, output_shape=(1024, 1024)),
     pts_backbone=dict(
         type='SECOND',
         in_channels=64,
@@ -63,7 +63,7 @@ model = dict(
             score_threshold=0.1,
             pc_range=[-51.2, -51.2],
             out_size_factor=4,
-            voxel_size=[0.2, 0.2],
+            voxel_size=voxel_size[:2],
             code_size=9),
         dcn_head=True))
 # model training and testing settings
@@ -71,7 +71,7 @@ train_cfg = dict(
     pts=dict(
         grid_size=[1024, 1024, 40],
         point_cloud_range=[-51.2, -51.2, -5., 51.2, 51.2, 3.],
-        voxel_size=[0.1, 0.1, 0.2],
+        voxel_size=voxel_size,
         out_size_factor=4,
         dense_reg=1,
         gaussian_overlap=0.1,
@@ -88,6 +88,6 @@ test_cfg = dict(
         score_threshold=0.0001,
         pc_range=[-51.2, -51.2],
         out_size_factor=4,
-        voxel_size=[0.2, 0.2],
+        voxel_size=voxel_size[:2],
         nms_type='circle',
         no_log=False))
