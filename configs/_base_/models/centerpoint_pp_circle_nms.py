@@ -1,6 +1,6 @@
 voxel_size = [0.25, 0.25, 8]
 model = dict(
-    type='CenterPointPP',
+    type='CenterPoint',
     pts_voxel_layer=dict(
         max_num_points=64,
         point_cloud_range=[-51.2, -51.2, -5.0, 51.2, 51.2, 3.0],
@@ -65,7 +65,7 @@ model = dict(
             out_size_factor=4,
             voxel_size=[0.2, 0.2],
             code_size=9),
-        dcn_head=True))
+        dcn_head=False))
 # model training and testing settings
 train_cfg = dict(
     pts=dict(

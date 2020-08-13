@@ -1,6 +1,6 @@
 _base_ = [
-    '../_base_/models/centerpoint.py', '../_base_/schedules/schedule_2x.py',
-    '../_base_/default_runtime.py'
+    '../_base_/models/centerpoint_pp_circle_nms.py',
+    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 
 # If point cloud range is changed, the models should also change their point
