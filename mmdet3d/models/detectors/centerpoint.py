@@ -15,7 +15,7 @@ from .base import Base3DDetector
 
 
 @DETECTORS.register_module()
-class CenterPointPP(Base3DDetector):
+class CenterPoint(Base3DDetector):
     """Base class of Multi-modality VoxelNet."""
 
     def __init__(self,
@@ -33,7 +33,7 @@ class CenterPointPP(Base3DDetector):
                  train_cfg=None,
                  test_cfg=None,
                  pretrained=None):
-        super(CenterPointPP, self).__init__()
+        super(CenterPoint, self).__init__()
 
         if pts_voxel_layer:
             self.pts_voxel_layer = Voxelization(**pts_voxel_layer)
@@ -72,7 +72,7 @@ class CenterPointPP(Base3DDetector):
 
     def init_weights(self, pretrained=None):
         """Initialize model weights."""
-        super(CenterPointPP, self).init_weights(pretrained)
+        super(CenterPoint, self).init_weights(pretrained)
         if pretrained is None:
             img_pretrained = None
             pts_pretrained = None
