@@ -1,5 +1,5 @@
 from .base import Base3DDetector
-from .centerpoint_pp import CenterPoint
+from .centerpoint import CenterPoint
 from .dynamic_voxelnet import DynamicVoxelNet
 from .mvx_faster_rcnn import DynamicMVXFasterRCNN, MVXFasterRCNN
 from .mvx_two_stage import MVXTwoStageDetector
