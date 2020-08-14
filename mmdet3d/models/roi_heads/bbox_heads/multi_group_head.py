@@ -826,8 +826,8 @@ class CenterHead(nn.Module):
                             boxes.detach().cpu().numpy(),
                             self.test_cfg['min_radius'][task_id],
                             post_max_size=self.test_cfg['post_max_size']),
+                        dtype=torch.long,
                         device=boxes.device)
-
                     boxes3d = boxes3d[keep]
                     scores = scores[keep]
                     labels = labels[keep]
