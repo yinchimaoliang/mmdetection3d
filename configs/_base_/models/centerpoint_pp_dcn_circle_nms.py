@@ -14,7 +14,7 @@ model = dict(
         voxel_size=(0.2, 0.2, 8),
         point_cloud_range=(-51.2, -51.2, -5.0, 51.2, 51.2, 3.0),
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
-    ),
+        legacy=True),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(1024, 1024)),
     pts_backbone=dict(
