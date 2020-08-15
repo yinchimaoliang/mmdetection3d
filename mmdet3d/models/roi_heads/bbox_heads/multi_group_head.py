@@ -5,31 +5,11 @@ from collections import defaultdict
 from mmcv.cnn import build_conv_layer, build_norm_layer, kaiming_init
 from torch import nn
 
-from mmdet3d.core import circle_nms
+from mmdet3d.core import circle_nms, xywhr2xyxyr
 from mmdet3d.ops.iou3d.iou3d_utils import nms_gpu
 from mmdet.core import build_bbox_coder, multi_apply
 from mmdet.models import FeatureAdaption
 from ...builder import HEADS, build_loss
-
-
-def boxes3d_to_bevboxes_lidar_torch(boxes3d):
-    """Change 3d bboxes to bev.
-
-    Args:
-        boxes3d (torch.Tensor): 3d boxes.
-
-    Returns:
-        torch.Tensor: Boxes in bev.
-    """
-    boxes_bev = boxes3d.new(torch.Size((boxes3d.shape[0], 5)))
-
-    cu, cv = boxes3d[:, 0], boxes3d[:, 1]
-
-    half_w, half_l = boxes3d[:, 3] / 2, boxes3d[:, 4] / 2
-    boxes_bev[:, 0], boxes_bev[:, 1] = cu - half_w, cv - half_l
-    boxes_bev[:, 2], boxes_bev[:, 3] = cu + half_w, cv + half_l
-    boxes_bev[:, 4] = boxes3d[:, -1]
-    return boxes_bev
 
 
 def gaussian2D(shape, sigma=1):
@@ -50,7 +30,7 @@ def gaussian2D(shape, sigma=1):
     return h
 
 
-def draw_umich_gaussian(heatmap, center, radius, k=1):
+def draw_heatmap_gaussian(heatmap, center, radius, k=1):
     """Get gaussian masked heatmap.
 
     Args:
@@ -169,17 +149,15 @@ class SepHead(nn.Module):
             Default: dict(type='BN2d').
     """
 
-    def __init__(
-            self,
-            in_channels,
-            heads,
-            head_conv=64,
-            final_kernel=1,
-            init_bias=-2.19,
-            conv_cfg=dict(type='Conv2d'),
-            norm_cfg=dict(type='BN2d'),
-            **kwargs,
-    ):
+    def __init__(self,
+                 in_channels,
+                 heads,
+                 head_conv=64,
+                 final_kernel=1,
+                 init_bias=-2.19,
+                 conv_cfg=dict(type='Conv2d'),
+                 norm_cfg=dict(type='BN2d'),
+                 **kwargs):
         super(SepHead, self).__init__(**kwargs)
 
         self.heads = heads
@@ -199,7 +177,7 @@ class SepHead(nn.Module):
                         bias=True))
                 if norm_cfg:
                     fc_layers.append(build_norm_layer(norm_cfg, head_conv)[1])
-                fc_layers.append(nn.ReLU())
+                fc_layers.append(nn.ReLU(inplace=True))
 
             fc_layers.append(
                 build_conv_layer(
@@ -309,11 +287,14 @@ class DCNSepHead(nn.Module):
                 bias=True)
         ]
         self.cls_head = nn.Sequential(*cls_head)
-        self.cls_head[-1].bias.data.fill_(init_bias)
-
+        self.init_bias = init_bias
         # other regression target
         self.task_head = SepHead(
             in_channels, heads, head_conv=head_conv, final_kernel=final_kernel)
+
+    def init_weights(self):
+
+        self.cls_head[-1].bias.data.fill_(self.init_bias)
 
     def forward(self, x):
         """Forward function for DCNSepHead.
@@ -323,7 +304,8 @@ class DCNSepHead(nn.Module):
                 [B, 512, 128, 128].
 
         Returns:
-            dict:   -reg （torch.Tensor): 2D regression value with the
+            dict[str: torch.Tensor]: contains the following keys:
+                    -reg （torch.Tensor): 2D regression value with the
                         shape of [B, 2, H, W].
                     -height (torch.Tensor): Height value with the
                         shape of [B, 1, H, W].
@@ -377,29 +359,25 @@ class CenterHead(nn.Module):
             Default: dict(type='BN2d').
     """
 
-    def __init__(
-            self,
-            mode='3d',
-            in_channels=[
-                128,
-            ],
-            tasks=[],
-            train_cfg=None,
-            test_cfg=None,
-            bbox_coder=None,
-            dataset='nuscenes',
-            weight=0.25,
-            code_weights=[],
-            common_heads=dict(),
-            crit=dict(type='CenterPointFocalLoss'),
-            crit_reg=dict(type='L1Loss', reduction='none'),
-            init_bias=-2.19,
-            share_conv_channel=64,
-            num_hm_conv=2,
-            dcn_head=False,
-            conv_cfg=dict(type='Conv2d'),
-            norm_cfg=dict(type='BN2d'),
-    ):
+    def __init__(self,
+                 mode='3d',
+                 in_channels=[128],
+                 tasks=[],
+                 train_cfg=None,
+                 test_cfg=None,
+                 bbox_coder=None,
+                 dataset='nuscenes',
+                 weight=0.25,
+                 code_weights=[],
+                 common_heads=dict(),
+                 crit=dict(type='CenterPointFocalLoss'),
+                 crit_reg=dict(type='L1Loss', reduction='none'),
+                 init_bias=-2.19,
+                 share_conv_channel=64,
+                 num_hm_conv=2,
+                 dcn_head=False,
+                 conv_cfg=dict(type='Conv2d'),
+                 norm_cfg=dict(type='BN2d')):
         super(CenterHead, self).__init__()
 
         num_classes = [len(t['class_names']) for t in tasks]
@@ -418,10 +396,7 @@ class CenterHead(nn.Module):
         self.crit_reg = build_loss(crit_reg)
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_aux = None
-        if dataset == 'nuscenes':
-            self.box_n_dim = 9
-        else:
-            raise NotImplementedError
+        assert dataset == 'nuscenes'
         self.num_anchor_per_locs = [n for n in num_classes]
         self.use_direction_classifier = False
 
@@ -440,10 +415,6 @@ class CenterHead(nn.Module):
             nn.ReLU(inplace=True))
 
         self.tasks = nn.ModuleList()
-        print('Use HM Bias: ', init_bias)
-
-        if dcn_head:
-            print('Use Deformable Convolution in the CenterHead!')
 
         for num_cls in num_classes:
             heads = copy.deepcopy(common_heads)
@@ -610,7 +581,7 @@ class CenterHead(nn.Module):
             task_boxes.append(torch.cat(task_box, axis=0).to(device))
             task_classes.append(torch.cat(task_class).to(device))
             flag2 += len(mask)
-        draw_gaussian = draw_umich_gaussian
+        draw_gaussian = draw_heatmap_gaussian
 
         hms, anno_boxes, inds, masks = [], [], [], []
 
@@ -828,6 +799,7 @@ class CenterHead(nn.Module):
                             post_max_size=self.test_cfg['post_max_size']),
                         dtype=torch.long,
                         device=boxes.device)
+
                     boxes3d = boxes3d[keep]
                     scores = scores[keep]
                     labels = labels[keep]
@@ -838,7 +810,7 @@ class CenterHead(nn.Module):
                 rets.append(
                     self.get_task_detections(num_class_with_bg,
                                              batch_cls_preds, batch_reg_preds,
-                                             batch_cls_labels))
+                                             batch_cls_labels, img_metas))
 
         # Merge branches results
         num_samples = len(rets[0])
@@ -861,13 +833,8 @@ class CenterHead(nn.Module):
             ret_list.append([bboxes, scores, labels])
         return ret_list
 
-    def get_task_detections(
-        self,
-        num_class_with_bg,
-        batch_cls_preds,
-        batch_reg_preds,
-        batch_cls_labels,
-    ):
+    def get_task_detections(self, num_class_with_bg, batch_cls_preds,
+                            batch_reg_preds, batch_cls_labels, img_metas):
         predictions_dicts = []
         post_center_range = self.test_cfg['post_center_limit_range']
         if len(post_center_range) > 0:
@@ -877,9 +844,8 @@ class CenterHead(nn.Module):
                 device=batch_reg_preds[0].device,
             )
 
-        for box_preds, cls_preds, cls_labels in zip(batch_reg_preds,
-                                                    batch_cls_preds,
-                                                    batch_cls_labels):
+        for i, (box_preds, cls_preds, cls_labels) in enumerate(
+                zip(batch_reg_preds, batch_cls_preds, batch_cls_labels)):
 
             box_preds = box_preds.float()
             cls_preds = cls_preds.float()
@@ -924,7 +890,8 @@ class CenterHead(nn.Module):
                 # boxes_for_nms = box_preds[:, [0, 1, 3, 4, -1]]
 
                 # GPU NMS from PCDet(https://github.com/sshaoshuai/PCDet)
-                boxes_for_nms = boxes3d_to_bevboxes_lidar_torch(box_preds)
+                boxes_for_nms = xywhr2xyxyr(img_metas[i]['box_type_3d'](
+                    box_preds, self.bbox_coder.code_size).bev)
                 # the nms in 3d detection just remove overlap boxes.
 
                 selected = nms_gpu(
@@ -971,7 +938,7 @@ class CenterHead(nn.Module):
                 device = batch_reg_preds[0].device
                 predictions_dict = {
                     'bboxes':
-                    torch.zeros([0, self.box_n_dim],
+                    torch.zeros([0, self.bbox_coder.code_size],
                                 dtype=dtype,
                                 device=device),
                     'scores':

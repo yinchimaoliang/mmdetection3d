@@ -472,7 +472,7 @@ def test_center_head():
     bbox_cfg = dict(
         type='CenterPointBBoxCoder',
         post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-        K=500,
+        max_num=500,
         score_threshold=0.1,
         pc_range=[-51.2, -51.2],
         out_size_factor=8,
@@ -560,7 +560,7 @@ def test_dcn_center_head():
     bbox_cfg = dict(
         type='CenterPointBBoxCoder',
         post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-        K=500,
+        max_num=500,
         score_threshold=0.1,
         pc_range=[-51.2, -51.2],
         out_size_factor=8,
@@ -690,9 +690,9 @@ def test_dcn_center_head():
     batch_cls_labels = torch.zeros([100]).cuda()
     batch_cls_preds = torch.rand([100]).cuda()
     batch_reg_preds = torch.rand([100, 9]).cuda()
-
+    img_metas = [dict(box_type_3d=LiDARInstance3DBoxes) for _ in range(100)]
     predictions_dicts = dcn_center_head.get_task_detections(
-        1, [batch_cls_preds], [batch_reg_preds], [batch_cls_labels])
+        1, [batch_cls_preds], [batch_reg_preds], [batch_cls_labels], img_metas)
     bboxes = predictions_dicts[0]['bboxes']
     scores = predictions_dicts[0]['scores']
     labels = predictions_dicts[0]['labels']
