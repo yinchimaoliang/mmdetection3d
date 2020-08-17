@@ -73,21 +73,23 @@ class LoadPointsFromMultiSweeps(object):
     Args:
         sweeps_num (int): Number of sweeps. Defaults to 10.
         load_dim (int): Dimension number of the loaded points. Defaults to 5.
-        use_dim (list[int]): Which dimension to use. Default: [0, 1, 2, 4].
+        use_dim (list[int]): Which dimension to use. Defaults to [0, 1, 2, 4].
         file_client_args (dict): Config dict of file clients, refer to
             https://github.com/open-mmlab/mmcv/blob/master/mmcv/fileio/file_client.py
             for more details. Defaults to dict(backend='disk').
+        pad_empty_sweeps (bool): Whether to repeat keyframe when
+            sweeps is empty. Defaults to False.
+        remove_close (bool): Whether to remove close points.
+            Defaults to False.
     """
 
-    def __init__(
-        self,
-        sweeps_num=10,
-        load_dim=5,
-        use_dim=[0, 1, 2, 4],
-        file_client_args=dict(backend='disk'),
-        pad_empty_sweeps=False,
-        remove_close=False,
-    ):
+    def __init__(self,
+                 sweeps_num=10,
+                 load_dim=5,
+                 use_dim=[0, 1, 2, 4],
+                 file_client_args=dict(backend='disk'),
+                 pad_empty_sweeps=False,
+                 remove_close=False):
         self.load_dim = load_dim
         self.sweeps_num = sweeps_num
         self.use_dim = use_dim
@@ -124,16 +126,15 @@ class LoadPointsFromMultiSweeps(object):
         Args:
             points (np.ndarray): Sweep points.
             radius (float): Radius below which points are removed.
-                Default: 1.0
+                Defaults to 1.0.
 
         Returns:
             np.ndarray: Points after removing.
         """
-        points_T = points.T
-        x_filt = np.abs(points_T[0, :]) < radius
-        y_filt = np.abs(points_T[1, :]) < radius
+        x_filt = np.abs(points[:, 0]) < radius
+        y_filt = np.abs(points[:, 1]) < radius
         not_close = np.logical_not(np.logical_and(x_filt, y_filt))
-        return points_T[:, not_close].T
+        return points[not_close, :]
 
     def __call__(self, results):
         """Call function to load multi-sweep point clouds from files.
@@ -160,10 +161,10 @@ class LoadPointsFromMultiSweeps(object):
                     sweep_points_list.append(points)
         else:
             if len(results['sweeps']) <= self.sweeps_num:
-                choices = [i for i in range(len(results['sweeps']))]
+                choices = np.arange(len(results['sweeps']))
             else:
                 choices = np.random.choice(
-                    len(results['sweeps']), self.sweeps_num)
+                    len(results['sweeps']), self.sweeps_num, replace=False)
             for idx in choices:
                 sweep = results['sweeps'][idx]
                 points_sweep = self._load_points(sweep['data_path'])
