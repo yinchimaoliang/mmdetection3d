@@ -2,7 +2,7 @@ voxel_size = [0.2, 0.2, 8]
 model = dict(
     type='CenterPoint',
     pts_voxel_layer=dict(
-        max_num_points=64,
+        max_num_points=20,
         point_cloud_range=[-51.2, -51.2, -5.0, 51.2, 51.2, 3.0],
         voxel_size=voxel_size,
         max_voxels=(30000, 40000)),
@@ -16,7 +16,7 @@ model = dict(
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
         legacy=True),
     pts_middle_encoder=dict(
-        type='PointPillarsScatter', in_channels=64, output_shape=(1024, 1024)),
+        type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
         type='SECOND',
         in_channels=64,
