@@ -45,9 +45,7 @@ model = dict(
             dict(num_class=2, class_names=['motorcycle', 'bicycle']),
             dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
         ],
-        dataset='nuscenes',
         weight=0.25,
-        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         common_heads={
             'reg': (2, 2),
             'height': (1, 2),
@@ -77,7 +75,8 @@ train_cfg = dict(
         gaussian_overlap=0.1,
         max_objs=500,
         min_radius=2,
-        no_log=False))
+        no_log=False,
+        code_weight=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0]))
 test_cfg = dict(
     pts=dict(
         post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
