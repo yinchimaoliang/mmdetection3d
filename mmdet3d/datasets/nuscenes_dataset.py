@@ -559,11 +559,11 @@ def lidar_nusc_box_to_global(info,
         box.rotate(pyquaternion.Quaternion(info['lidar2ego_rotation']))
         box.translate(np.array(info['lidar2ego_translation']))
         # filter det in ego.
-        # cls_range_map = eval_configs.class_range
-        # radius = np.linalg.norm(box.center[:2], 2)
-        # det_range = cls_range_map[classes[box.label]]
-        # if radius > det_range:
-        #     continue
+        cls_range_map = eval_configs.class_range
+        radius = np.linalg.norm(box.center[:2], 2)
+        det_range = cls_range_map[classes[box.label]]
+        if radius > det_range:
+            continue
         # Move box to global coord system
         box.rotate(pyquaternion.Quaternion(info['ego2global_rotation']))
         box.translate(np.array(info['ego2global_translation']))

@@ -47,7 +47,6 @@ model = dict(
         ],
         dataset='nuscenes',
         weight=0.25,
-        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         common_heads={
             'reg': (2, 2),
             'height': (1, 2),
@@ -77,6 +76,7 @@ train_cfg = dict(
         gaussian_overlap=0.1,
         max_objs=500,
         min_radius=2,
+        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         no_log=False))
 test_cfg = dict(
     pts=dict(
