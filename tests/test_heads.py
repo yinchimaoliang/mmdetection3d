@@ -485,6 +485,7 @@ def test_center_head():
         dense_reg=1,
         gaussian_overlap=0.1,
         max_objs=500,
+        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         min_radius=2,
         no_log=False)
     test_cfg = dict(
@@ -507,9 +508,7 @@ def test_center_head():
         train_cfg=train_cfg,
         test_cfg=test_cfg,
         bbox_coder=bbox_cfg,
-        dataset='nuscenes',
         weight=0.25,
-        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         common_heads={
             'reg': (2, 2),
             'height': (1, 2),
@@ -573,6 +572,7 @@ def test_dcn_center_head():
         dense_reg=1,
         gaussian_overlap=0.1,
         max_objs=500,
+        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         min_radius=2,
         no_log=False)
     test_cfg = dict(
@@ -593,9 +593,7 @@ def test_dcn_center_head():
         mode='3d',
         in_channels=sum([256, 256]),
         tasks=tasks,
-        dataset='nuscenes',
         weight=0.25,
-        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         common_heads={
             'reg': (2, 2),
             'height': (1, 2),
@@ -669,9 +667,7 @@ def test_dcn_center_head():
         mode='3d',
         in_channels=sum([256, 256]),
         tasks=tasks,
-        dataset='nuscenes',
         weight=0.25,
-        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
         common_heads={
             'reg': (2, 2),
             'height': (1, 2),
