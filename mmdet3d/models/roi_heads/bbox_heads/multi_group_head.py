@@ -457,9 +457,9 @@ class CenterHead(nn.Module):
                 are valid.
         """
         device = gt_labels_3d.device
-        gt_bboxes_3d.limit_yaw(offset=0.5, period=np.pi * 2)
         gt_bboxes_3d = gt_bboxes_3d.tensor[:, [0, 1, 2, 3, 4, 5, 7, 8, 6]].to(
             device)
+        gt_labels_3d += 1
         max_objs = self.train_cfg['max_objs'] * self.train_cfg['dense_reg']
         grid_size = np.array(self.train_cfg['grid_size'])
         pc_range = np.array(self.train_cfg['point_cloud_range'])
@@ -490,7 +490,6 @@ class CenterHead(nn.Module):
             task_classes.append(torch.cat(task_class).to(device))
             flag2 += len(mask)
         draw_gaussian = draw_heatmap_gaussian
-
         hms, anno_boxes, inds, masks = [], [], [], []
 
         for idx, task in enumerate(self.tasks):
@@ -579,7 +578,6 @@ class CenterHead(nn.Module):
             anno_boxes.append(anno_box)
             masks.append(mask)
             inds.append(ind)
-
         return hms, anno_boxes, inds, masks
 
     def loss(self, gt_bboxes_3d, gt_labels_3d, preds_dicts, **kwargs):
