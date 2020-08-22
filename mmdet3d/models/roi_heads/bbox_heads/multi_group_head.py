@@ -1,7 +1,6 @@
 import copy
 import numpy as np
 import torch
-from collections import defaultdict
 from mmcv.cnn import build_conv_layer, build_norm_layer, kaiming_init
 from torch import nn
 
@@ -591,7 +590,7 @@ class CenterHead(nn.Module):
         """
         hms, anno_boxes, inds, masks = self.get_targets(
             gt_bboxes_3d, gt_labels_3d)
-        rets = []
+        loss_dict = dict()
         for task_id, preds_dict in enumerate(preds_dicts):
             # heatmap focal loss
             preds_dict[0]['hm'] = clip_sigmoid(preds_dict[0]['hm'])
@@ -619,17 +618,11 @@ class CenterHead(nn.Module):
             code_weights = self.train_cfg.get('code_weights', [])
             loc_loss = (box_loss * box_loss.new_tensor(code_weights)).sum()
             loss = hm_loss + self.weight * loc_loss
-            ret = dict(
-                loss=loss, hm_loss=hm_loss.detach().cpu(), loc_loss=loc_loss)
+            loss_dict[f'loss_{task_id}'] = loss
+            loss_dict[f'hm_loss_{task_id}'] = hm_loss
+            loss_dict[f'loc_loss_{task_id}'] = loc_loss
 
-            rets.append(ret)
-        # convert batch-key to key-batch
-        rets_merged = defaultdict(list)
-        for ret in rets:
-            for k, v in ret.items():
-                rets_merged[k].append(v)
-
-        return rets_merged
+        return loss_dict
 
     def get_bboxes(self, preds_dicts, img_metas, img=None, rescale=False):
         """Generate bboxes from bbox head predictions.
