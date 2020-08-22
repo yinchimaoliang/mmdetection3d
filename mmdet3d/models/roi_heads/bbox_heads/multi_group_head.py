@@ -607,17 +607,18 @@ class CenterHead(nn.Module):
 
             # Regression loss for dimension, offset, height, rotation
             ind = inds[task_id]
+            num = masks[task_id].float().sum()
             pred = preds_dict[0]['anno_box'].permute(0, 2, 3, 1).contiguous()
             pred = pred.view(pred.size(0), -1, pred.size(3))
             pred = self._gather_feat(pred, ind)
-            mask = torch.unsqueeze(masks[task_id], -1).expand(pred.size())
+            mask = masks[task_id].unsqueeze(2).expand_as(target_box).float()
+            isnotnan = (~torch.isnan(target_box)).float()
+            mask *= isnotnan
             box_loss = torch.sum(self.loss_reg(pred, target_box, mask), 1) / (
-                masks[task_id].float().sum() + 1e-4)
+                num + 1e-4)
             code_weights = self.train_cfg.get('code_weights', [])
             loc_loss = (box_loss * box_loss.new_tensor(code_weights)).sum()
-
             loss = hm_loss + self.weight * loc_loss
-
             ret = dict(
                 loss=loss, hm_loss=hm_loss.detach().cpu(), loc_loss=loc_loss)
 
