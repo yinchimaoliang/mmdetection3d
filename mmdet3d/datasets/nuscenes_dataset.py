@@ -1,6 +1,5 @@
 import mmcv
 import numpy as np
-import pdb
 import pyquaternion
 import tempfile
 from nuscenes.utils.data_classes import Box as NuScenesBox
@@ -162,7 +161,6 @@ class NuScenesDataset(Custom3DDataset):
                 for name in set(info['gt_names']):
                     if name in self.CLASSES:
                         _cls_infos[name].append(info)
-            pdb.set_trace()
             duplicated_samples = sum([len(v) for _, v in _cls_infos.items()])
             _cls_dist = {
                 k: len(v) / duplicated_samples
@@ -185,7 +183,6 @@ class NuScenesDataset(Custom3DDataset):
                     data_infos.extend(v)
             else:
                 data_infos = data['infos']
-        pdb.set_trace()
         self.metadata = data['metadata']
         self.version = self.metadata['version']
         return data_infos
