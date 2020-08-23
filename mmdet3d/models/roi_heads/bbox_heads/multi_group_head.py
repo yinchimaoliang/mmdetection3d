@@ -618,9 +618,9 @@ class CenterHead(nn.Module):
             code_weights = self.train_cfg.get('code_weights', [])
             loc_loss = (box_loss * box_loss.new_tensor(code_weights)).sum()
             loss = hm_loss + self.weight * loc_loss
-            loss_dict[f'loss_{task_id}'] = loss
-            loss_dict[f'hm_loss_{task_id}'] = hm_loss
-            loss_dict[f'loc_loss_{task_id}'] = loc_loss
+            loss_dict[f'loss_task{task_id}'] = loss
+            loss_dict[f'hm_loss_task{task_id}'] = hm_loss.detach()
+            loss_dict[f'loc_loss_task{task_id}'] = loc_loss
 
         return loss_dict
 
