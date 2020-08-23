@@ -1,4 +1,4 @@
-from mmdet.datasets.builder import DATASETS, build_dataloader, build_dataset
+from .builder import DATASETS, build_dataloader, build_dataset
 from .custom_3d import Custom3DDataset
 from .kitti_dataset import KittiDataset
 from .lyft_dataset import LyftDataset

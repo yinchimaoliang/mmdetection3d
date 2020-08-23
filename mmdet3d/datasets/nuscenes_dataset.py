@@ -111,7 +111,6 @@ class NuScenesDataset(Custom3DDataset):
                  box_type_3d='LiDAR',
                  filter_empty_gt=True,
                  test_mode=False,
-                 bottom2gravity=False,
                  eval_version='detection_cvpr_2019',
                  balance_class=False,
                  use_valid_flag=False):
@@ -132,7 +131,6 @@ class NuScenesDataset(Custom3DDataset):
         self.eval_version = eval_version
         from nuscenes.eval.detection.config import config_factory
         self.eval_detection_configs = config_factory(self.eval_version)
-        self.bottom2gravity = bottom2gravity
         if self.modality is None:
             self.modality = dict(
                 use_camera=False,
@@ -152,39 +150,8 @@ class NuScenesDataset(Custom3DDataset):
             list[dict]: List of annotations sorted by timestamps.
         """
         data = mmcv.load(ann_file)
-        if self.balance_class is False:
-            data_infos = list(
-                sorted(data['infos'], key=lambda e: e['timestamp']))
-            data_infos = data_infos[::self.load_interval]
-        else:  # if training
-            assert self.test_mode is False, 'Should not use balance_class ' \
-                                            'option under test mode.'
-            _cls_infos = {name: [] for name in self.CLASSES}
-            for info in data['infos']:
-                if self.use_valid_flag:
-                    mask = info['valid_flag']
-                    gt_names = set(info['gt_names'][mask])
-                else:
-                    gt_names = set(info['gt_names'])
-                for name in gt_names:
-                    if name in self.CLASSES:
-                        _cls_infos[name].append(info)
-            duplicated_samples = sum([len(v) for _, v in _cls_infos.items()])
-            _cls_dist = {
-                k: len(v) / duplicated_samples
-                for k, v in _cls_infos.items()
-            }
-
-            data_infos = []
-
-            frac = 1.0 / len(self.CLASSES)
-            ratios = [frac / v for v in _cls_dist.values()]
-            for cls_infos, ratio in zip(list(_cls_infos.values()), ratios):
-                # data_infos += np.random.choice(
-                #     cls_infos, int(len(cls_infos) * ratio)
-                # ).tolist()
-                data_infos += cls_infos[:int(len(cls_infos) * ratio)]
-
+        data_infos = list(sorted(data['infos'], key=lambda e: e['timestamp']))
+        data_infos = data_infos[::self.load_interval]
         self.metadata = data['metadata']
         self.version = self.metadata['version']
         return data_infos
@@ -285,8 +252,6 @@ class NuScenesDataset(Custom3DDataset):
 
         # the nuscenes box center is [0.5, 0.5, 0.5], we change it to be
         # the same as KITTI (0.5, 0.5, 0)
-        if self.bottom2gravity:
-            gt_bboxes_3d[:, 2] = gt_bboxes_3d[:, 2] + gt_bboxes_3d[:, 5] * 0.5
         gt_bboxes_3d = LiDARInstance3DBoxes(
             gt_bboxes_3d,
             box_dim=gt_bboxes_3d.shape[-1],

@@ -456,8 +456,9 @@ class CenterHead(nn.Module):
                 are valid.
         """
         device = gt_labels_3d.device
-        gt_bboxes_3d = gt_bboxes_3d.tensor[:, [0, 1, 2, 3, 4, 5, 7, 8, 6]].to(
-            device)
+        gt_bboxes_3d = torch.cat((gt_bboxes_3d.gravity_center,
+                                  gt_bboxes_3d.tensor[:, [3, 4, 5, 7, 8, 6]]),
+                                 dim=1).to(device)
         gt_labels_3d += 1
         max_objs = self.train_cfg['max_objs'] * self.train_cfg['dense_reg']
         grid_size = np.array(self.train_cfg['grid_size'])
