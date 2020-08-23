@@ -1,4 +1,5 @@
 import mmcv
+import numpy as np
 
 from .builder import DATASETS
 
@@ -41,12 +42,13 @@ class ClassSampledDataset(object):
             Default: True.
     """
 
-    def __init__(self, dataset):
+    def __init__(self, dataset, ann_file):
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
         if hasattr(self.dataset, 'flag'):
             self.flag = self.dataset.flag
         self._ori_len = len(self.dataset)
+        self.dataset.data_infos = self.load_annotations(ann_file)
 
     def load_annotations(self, ann_file):
         """Load annotations from ann_file.
@@ -60,7 +62,7 @@ class ClassSampledDataset(object):
         data = mmcv.load(ann_file)
         _cls_infos = {name: [] for name in self.CLASSES}
         for info in data['infos']:
-            if self.use_valid_flag:
+            if self.dataset.use_valid_flag:
                 mask = info['valid_flag']
                 gt_names = set(info['gt_names'][mask])
             else:
@@ -79,10 +81,9 @@ class ClassSampledDataset(object):
         frac = 1.0 / len(self.CLASSES)
         ratios = [frac / v for v in _cls_dist.values()]
         for cls_infos, ratio in zip(list(_cls_infos.values()), ratios):
-            # data_infos += np.random.choice(
-            #     cls_infos, int(len(cls_infos) * ratio)
-            # ).tolist()
-            data_infos += cls_infos[:int(len(cls_infos) * ratio)]
+            data_infos += np.random.choice(cls_infos,
+                                           int(len(cls_infos) *
+                                               ratio)).tolist()
 
         self.metadata = data['metadata']
         self.version = self.metadata['version']
