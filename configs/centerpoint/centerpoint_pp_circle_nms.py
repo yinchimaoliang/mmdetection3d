@@ -5,7 +5,7 @@ _base_ = [
 
 # If point cloud range is changed, the models should also change their point
 # cloud range accordingly
-point_cloud_range = [-50, -50, -5, 50, 50, 3]
+point_cloud_range = [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 # For nuScenes we usually do 10-class detection
 class_names = [
     'car', 'truck', 'construction_vehicle', 'bus', 'trailer', 'barrier',
@@ -30,9 +30,11 @@ train_pipeline = [
         file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=10,
+        sweeps_num=9,
         use_dim=[0, 1, 2, 3, 4],
-        file_client_args=file_client_args),
+        file_client_args=file_client_args,
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
     dict(
         type='GlobalRotScaleTrans',
@@ -55,9 +57,11 @@ test_pipeline = [
         file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=10,
+        sweeps_num=9,
         use_dim=[0, 1, 2, 3, 4],
-        file_client_args=file_client_args),
+        file_client_args=file_client_args,
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(
         type='MultiScaleFlipAug3D',
         img_scale=(1333, 800),
@@ -71,8 +75,6 @@ test_pipeline = [
                 translation_std=[0, 0, 0]),
             dict(type='RandomFlip3D'),
             dict(
-                type='PointsRangeFilter', point_cloud_range=point_cloud_range),
-            dict(
                 type='DefaultFormatBundle3D',
                 class_names=class_names,
                 with_label=False),
@@ -82,7 +84,7 @@ test_pipeline = [
 
 data = dict(
     samples_per_gpu=4,
-    workers_per_gpu=4,
+    workers_per_gpu=10,
     train=dict(
         type=dataset_type,
         data_root=data_root,
@@ -91,6 +93,9 @@ data = dict(
         classes=class_names,
         modality=input_modality,
         test_mode=False,
+        bottom2gravity=True,
+        balance_class=True,
+        use_valid_flag=True,
         # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
         # and box_type_3d='Depth' in sunrgbd and scannet dataset.
         box_type_3d='LiDAR'),

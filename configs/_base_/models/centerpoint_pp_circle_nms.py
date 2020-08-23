@@ -2,7 +2,7 @@ voxel_size = [0.2, 0.2, 8]
 model = dict(
     type='CenterPoint',
     pts_voxel_layer=dict(
-        max_num_points=64,
+        max_num_points=20,
         point_cloud_range=[-51.2, -51.2, -5.0, 51.2, 51.2, 3.0],
         voxel_size=voxel_size,
         max_voxels=(30000, 40000)),
@@ -11,10 +11,10 @@ model = dict(
         in_channels=5,
         feat_channels=[64],
         with_distance=False,
-        voxel_size=voxel_size,
+        voxel_size=(0.2, 0.2, 8),
         point_cloud_range=(-51.2, -51.2, -5.0, 51.2, 51.2, 3.0),
         norm_cfg=dict(type='BN1d', eps=1e-3, momentum=0.01),
-        legacy=True),
+        legacy=False),
     pts_middle_encoder=dict(
         type='PointPillarsScatter', in_channels=64, output_shape=(512, 512)),
     pts_backbone=dict(
@@ -45,7 +45,6 @@ model = dict(
             dict(num_class=2, class_names=['motorcycle', 'bicycle']),
             dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
         ],
-        dataset='nuscenes',
         weight=0.25,
         common_heads={
             'reg': (2, 2),
@@ -76,8 +75,8 @@ train_cfg = dict(
         gaussian_overlap=0.1,
         max_objs=500,
         min_radius=2,
-        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
-        no_log=False))
+        no_log=False,
+        code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0]))
 test_cfg = dict(
     pts=dict(
         post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
