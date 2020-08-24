@@ -4,42 +4,15 @@ import numpy as np
 from .builder import DATASETS
 
 
-# Modified from https://github.com/facebookresearch/detectron2/blob/41d475b75a230221e21d9cac5d69655e3415e3a4/detectron2/data/samplers/distributed_sampler.py#L57 # noqa
 @DATASETS.register_module()
 class ClassSampledDataset(object):
-    """A wrapper of repeated dataset with repeat factor.
+    """A wrapper of class sampled dataset with ann_file path.
 
-    Suitable for training on class imbalanced datasets like LVIS. Following
-    the sampling strategy in the `paper <https://arxiv.org/abs/1908.03195>`_,
-    in each epoch, an image may appear multiple times based on its
-    "repeat factor".
-    The repeat factor for an image is a function of the frequency the rarest
-    category labeled in that image. The "frequency of category c" in [0, 1]
-    is defined by the fraction of images in the training set (without repeats)
-    in which category c appears.
-    The dataset needs to instantiate :func:`self.get_cat_ids` to support
-    ClassBalancedDataset.
-
-    The repeat factor is computed as followed.
-
-    1. For each category c, compute the fraction # of images
-       that contain it: :math:`f(c)`
-    2. For each category c, compute the category-level repeat factor:
-       :math:`r(c) = max(1, sqrt(t/f(c)))`
-    3. For each image I, compute the image-level repeat factor:
-       :math:`r(I) = max_{c in I} r(c)`
+    Balance the number of scenes under different classes.
 
     Args:
-        dataset (:obj:`CustomDataset`): The dataset to be repeated.
-        oversample_thr (float): frequency threshold below which data is
-            repeated. For categories with ``f_c >= oversample_thr``, there is
-            no oversampling. For categories with ``f_c < oversample_thr``, the
-            degree of oversampling following the square-root inverse frequency
-            heuristic above.
-        filter_empty_gt (bool, optional): If set true, images without bounding
-            boxes will not be oversampled. Otherwise, they will be categorized
-            as the pure background class and involved into the oversampling.
-            Default: True.
+        dataset (:obj:`CustomDataset`): The dataset to be class sampled.
+        ann_file (str): Path of annotation file.
     """
 
     def __init__(self, dataset, ann_file):
@@ -57,7 +30,7 @@ class ClassSampledDataset(object):
             ann_file (str): Path of the annotation file.
 
         Returns:
-            list[dict]: List of annotations sorted by timestamps.
+            list[dict]: List of annotations after class sampling.
         """
         data = mmcv.load(ann_file)
         _cls_infos = {name: [] for name in self.CLASSES}

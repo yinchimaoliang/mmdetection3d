@@ -36,8 +36,7 @@ class NuScenesDataset(Custom3DDataset):
         box_type_3d (str, optional): Type of 3D box of this dataset.
             Based on the `box_type_3d`, the dataset will encapsulate the box
             to its original format then converted them to `box_type_3d`.
-            Defaults to 'LiDAR' in this dataset. Available options includes
-
+            Defaults to 'LiDAR' in this dataset. Available options includes.
             - 'LiDAR': Box in LiDAR coordinates.
             - 'Depth': Box in depth coordinates, usually for indoor dataset.
             - 'Camera': Box in camera coordinates.
@@ -47,6 +46,8 @@ class NuScenesDataset(Custom3DDataset):
             Defaults to False.
         eval_version (bool, optional): Configuration version of evaluation.
             Defaults to  'detection_cvpr_2019'.
+        use_valid_flag (bool): Whether to use `use_valid_flag` key in the info
+            file as mask to filter gt_boxes and gt_names. Defaults to False.
     """
     NameMapping = {
         'movable_object.barrier': 'barrier',
@@ -112,10 +113,8 @@ class NuScenesDataset(Custom3DDataset):
                  filter_empty_gt=True,
                  test_mode=False,
                  eval_version='detection_cvpr_2019',
-                 balance_class=False,
                  use_valid_flag=False):
         self.load_interval = load_interval
-        self.balance_class = balance_class
         self.use_valid_flag = use_valid_flag
         super().__init__(
             data_root=data_root,

@@ -1,7 +1,5 @@
 import copy
-import numpy as np
 import platform
-import random
 from mmcv.utils import build_from_cfg
 
 from mmdet.datasets import DATASETS
@@ -68,11 +66,3 @@ def build_dataset(cfg, default_args=None):
         dataset = build_from_cfg(cfg, DATASETS, default_args)
 
     return dataset
-
-
-def worker_init_fn(worker_id, num_workers, rank, seed):
-    # The seed of each worker equals to
-    # num_worker * rank + worker_id + user_seed
-    worker_seed = num_workers * rank + worker_id + seed
-    np.random.seed(worker_seed)
-    random.seed(worker_seed)
