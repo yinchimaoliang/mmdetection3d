@@ -95,7 +95,6 @@ data = dict(
             classes=class_names,
             modality=input_modality,
             test_mode=False,
-            balance_class=True,
             use_valid_flag=True,
             # we use box_type_3d='LiDAR' in kitti and nuscenes dataset
             # and box_type_3d='Depth' in sunrgbd and scannet dataset.
