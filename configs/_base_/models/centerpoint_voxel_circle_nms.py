@@ -45,7 +45,6 @@ model = dict(
             dict(num_class=2, class_names=['motorcycle', 'bicycle']),
             dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
         ],
-        dataset='nuscenes',
         weight=0.25,
         common_heads={
             'reg': (2, 2),
@@ -58,7 +57,7 @@ model = dict(
         bbox_coder=dict(
             type='CenterPointBBoxCoder',
             post_center_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
-            K=500,
+            max_num=500,
             score_threshold=0.1,
             pc_range=[-51.2, -51.2],
             out_size_factor=8,

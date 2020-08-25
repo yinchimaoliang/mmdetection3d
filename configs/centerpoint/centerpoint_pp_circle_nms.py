@@ -53,7 +53,9 @@ db_sampler = dict(
         bicycle=6,
         pedestrian=2,
         traffic_cone=2,
-    ))
+    ),
+    load_dim=5,
+    use_dim=[0, 1, 2, 3, 4])
 
 train_pipeline = [
     dict(
