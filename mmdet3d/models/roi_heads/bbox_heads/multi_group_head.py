@@ -487,7 +487,7 @@ class CenterHead(nn.Module):
                 task_box.append(gt_bboxes_3d[m])
                 task_class.append(gt_labels_3d[m] - flag2)
             task_boxes.append(torch.cat(task_box, axis=0).to(device))
-            task_classes.append(torch.cat(task_class).to(device))
+            task_classes.append(torch.cat(task_class).long().to(device))
             flag2 += len(mask)
         draw_gaussian = draw_heatmap_gaussian
         hms, anno_boxes, inds, masks = [], [], [], []

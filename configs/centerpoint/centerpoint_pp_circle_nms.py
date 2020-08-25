@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/centerpoint_pp_circle_nms.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+    '../_base_/default_runtime.py'
 ]
 
 # If point cloud range is changed, the models should also change their point
@@ -157,4 +157,18 @@ data = dict(
 # Since the models are trained by 24 epochs by default, we set evaluation
 # interval to be 24. Please change the interval accordingly if you do not
 # use a default schedule.
+
+optimizer = dict(type='AdamW', lr=0.001, weight_decay=0.01)
+# max_norm=10 is better for SECOND
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=1000,
+    warmup_ratio=1.0 / 1000,
+    step=[16, 19, 20])
+momentum_config = None
+# runtime settings
+total_epochs = 20
+
 evaluation = dict(interval=24)
