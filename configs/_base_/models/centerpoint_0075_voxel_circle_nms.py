@@ -3,7 +3,7 @@ point_cloud_range = [-54, -54, -5.0, 54, 54, 3.0]
 model = dict(
     type='CenterPoint',
     pts_voxel_layer=dict(
-        max_num_points=64,
+        max_num_points=10,
         point_cloud_range=point_cloud_range,
         voxel_size=voxel_size,
         max_voxels=(90000, 120000)),
@@ -11,12 +11,12 @@ model = dict(
     pts_middle_encoder=dict(
         type='SparseEncoder',
         in_channels=5,
-        sparse_shape=[40, 1024, 1024],
+        sparse_shape=[41, 1440, 1440],
+        output_channels=128,
         order=('conv', 'norm', 'act'),
         encoder_channels=((16, 16, 32), (32, 32, 64), (64, 64, 128), (128,
                                                                       128)),
-        encoder_paddings=((1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1,
-                                                                       1)),
+        encoder_paddings=((0, 0, 1), (0, 0, 1), (0, 0, [0, 1, 1]), (0, 0)),
         block_type='basicblock'),
     pts_backbone=dict(
         type='SECOND',

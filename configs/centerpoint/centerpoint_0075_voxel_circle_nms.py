@@ -55,23 +55,26 @@ test_pipeline = [
         file_client_args=file_client_args),
     dict(
         type='LoadPointsFromMultiSweeps',
-        sweeps_num=10,
+        sweeps_num=9,
         use_dim=[0, 1, 2, 3, 4],
-        file_client_args=file_client_args),
+        file_client_args=file_client_args,
+        pad_empty_sweeps=True,
+        remove_close=True),
     dict(
         type='MultiScaleFlipAug3D',
         img_scale=(1333, 800),
         pts_scale_ratio=1,
         flip=False,
         transforms=[
-            dict(
-                type='GlobalRotScaleTrans',
-                rot_range=[0, 0],
-                scale_ratio_range=[1., 1.],
-                translation_std=[0, 0, 0]),
-            dict(type='RandomFlip3D'),
-            dict(
-                type='PointsRangeFilter', point_cloud_range=point_cloud_range),
+            # dict(
+            #     type='GlobalRotScaleTrans',
+            #     rot_range=[0, 0],
+            #     scale_ratio_range=[1., 1.],
+            #     translation_std=[0, 0, 0]),
+            # dict(type='RandomFlip3D'),
+            # dict(
+            #     type='PointsRangeFilter', point_cloud_range=
+            #     point_cloud_range),
             dict(
                 type='DefaultFormatBundle3D',
                 class_names=class_names,
