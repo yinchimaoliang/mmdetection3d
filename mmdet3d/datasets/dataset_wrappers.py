@@ -4,8 +4,9 @@ from .builder import DATASETS
 
 
 @DATASETS.register_module()
-class ClassSampledDataset(object):
+class CBGSDataset(object):
     """A wrapper of class sampled dataset with ann_file path.
+    https://arxiv.org/abs/1908.09492.
 
     Balance the number of scenes under different classes.
 
@@ -17,11 +18,11 @@ class ClassSampledDataset(object):
     def __init__(self, dataset):
         self.dataset = dataset
         self.CLASSES = dataset.CLASSES
-        self.repeat_indices = self._get_sample_indices()
+        self.sample_indices = self._get_sample_indices()
         # self.dataset.data_infos = self.data_infos
         if hasattr(self.dataset, 'flag'):
             self.flag = np.array(
-                [self.dataset.flag[ind] for ind in self.repeat_indices],
+                [self.dataset.flag[ind] for ind in self.sample_indices],
                 dtype=np.uint8)
 
     def _get_sample_indices(self):
@@ -54,9 +55,9 @@ class ClassSampledDataset(object):
 
         frac = 1.0 / len(self.CLASSES)
         ratios = [frac / v for v in class_distribution.values()]
-        for cls_infos, ratio in zip(list(class_sample_idx.values()), ratios):
-            sample_indices += np.random.choice(cls_infos,
-                                               int(len(cls_infos) *
+        for cls_inds, ratio in zip(list(class_sample_idx.values()), ratios):
+            sample_indices += np.random.choice(cls_inds,
+                                               int(len(cls_inds) *
                                                    ratio)).tolist()
         return sample_indices
 
@@ -67,7 +68,7 @@ class ClassSampledDataset(object):
             dict: Data dictionary of the corresponding index.
         """
         # pdb.set_trace()
-        ori_idx = self.repeat_indices[idx]
+        ori_idx = self.sample_indices[idx]
         return self.dataset[ori_idx]
 
     def __len__(self):
