@@ -67,7 +67,6 @@ class CBGSDataset(object):
         Returns:
             dict: Data dictionary of the corresponding index.
         """
-        # pdb.set_trace()
         ori_idx = self.sample_indices[idx]
         return self.dataset[ori_idx]
 
@@ -77,5 +76,4 @@ class CBGSDataset(object):
         Returns:
             int: Length of data infos.
         """
-        # pdb.set_trace()
-        return len(self.data_infos)
+        return len(self.sample_indices)
