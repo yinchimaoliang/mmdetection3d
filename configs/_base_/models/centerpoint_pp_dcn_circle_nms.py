@@ -63,7 +63,9 @@ model = dict(
             out_size_factor=4,
             voxel_size=voxel_size[:2],
             code_size=9),
-        dcn_head=True))
+        dcn_head=True),
+    loss_cls=dict(type='CenterPointFocalLoss'),
+    loss_reg=dict(type='L1Loss', reduction='none', loss_weight=0.25))
 # model training and testing settings
 train_cfg = dict(
     pts=dict(

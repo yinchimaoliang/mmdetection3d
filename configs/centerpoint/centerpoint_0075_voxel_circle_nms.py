@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/centerpoint_0075_voxel_circle_nms.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+    '../_base_/default_runtime.py'
 ]
 
 # If point cloud range is changed, the models should also change their point
@@ -177,6 +177,5 @@ momentum_config = dict(
     step_ratio_up=0.4,
 )
 
-momentum_config = None
 # runtime settings
-total_epochs = 24
+total_epochs = 20
