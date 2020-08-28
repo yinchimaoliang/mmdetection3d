@@ -34,17 +34,7 @@ class CBGSDataset(object):
         Returns:
             list[dict]: List of annotations after class sampling.
         """
-        data = self.dataset.data_infos
-        class_sample_idx = {name: [] for name in self.CLASSES}
-        for idx, info in enumerate(data):
-            if self.dataset.use_valid_flag:
-                mask = info['valid_flag']
-                gt_names = set(info['gt_names'][mask])
-            else:
-                gt_names = set(info['gt_names'])
-            for name in gt_names:
-                if name in self.CLASSES:
-                    class_sample_idx[name].append(idx)
+        class_sample_idx = self.dataset.get_cat_ids()
         duplicated_samples = sum([len(v) for _, v in class_sample_idx.items()])
         class_distribution = {
             k: len(v) / duplicated_samples

@@ -139,6 +139,19 @@ class NuScenesDataset(Custom3DDataset):
                 use_external=False,
             )
 
+    def get_cat_ids(self):
+        class_sample_idx = {name: [] for name in self.CLASSES}
+        for idx, info in enumerate(self.data_infos):
+            if self.use_valid_flag:
+                mask = info['valid_flag']
+                gt_names = set(info['gt_names'][mask])
+            else:
+                gt_names = set(info['gt_names'])
+            for name in gt_names:
+                if name in self.CLASSES:
+                    class_sample_idx[name].append(idx)
+        return class_sample_idx
+
     def load_annotations(self, ann_file):
         """Load annotations from ann_file.
 
