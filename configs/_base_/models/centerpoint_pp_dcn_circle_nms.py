@@ -45,7 +45,6 @@ model = dict(
             dict(num_class=2, class_names=['motorcycle', 'bicycle']),
             dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
         ],
-        weight=0.25,
         common_heads={
             'reg': (2, 2),
             'height': (1, 2),
@@ -64,7 +63,7 @@ model = dict(
             voxel_size=voxel_size[:2],
             code_size=9),
         dcn_head=True,
-        loss_cls=dict(type='CenterPointFocalLoss'),
+        loss_cls=dict(type='GaussianFocalLoss', reduction='sum'),
         loss_reg=dict(type='L1Loss', reduction='none', loss_weight=0.25)))
 # model training and testing settings
 train_cfg = dict(
