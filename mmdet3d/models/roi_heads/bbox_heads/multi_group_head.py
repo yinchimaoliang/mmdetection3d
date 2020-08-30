@@ -595,7 +595,9 @@ class CenterHead(nn.Module):
             # heatmap focal loss
             preds_dict[0]['hm'] = clip_sigmoid(preds_dict[0]['hm'])
             hm_loss = self.loss_cls(preds_dict[0]['hm'], hms[task_id])
-
+            num_pos = hms[task_id].eq(1).float().sum()
+            if num_pos > 0:
+                hm_loss /= num_pos
             target_box = anno_boxes[task_id]
             # reconstruct the anno_box from multiple reg heads
             preds_dict[0]['anno_box'] = torch.cat(
