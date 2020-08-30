@@ -64,9 +64,9 @@ def test_getitem():
     nus_dataset = build_dataset(dataset_cfg)
     assert len(nus_dataset) == 10
     data = nus_dataset[0]
-    assert data['img_metas'].data['flip'] is False
-    assert data['img_metas'].data['pcd_horizontal_flip'] is False
-    assert data['points']._data.shape == (901, 5)
+    assert data['img_metas'].data['flip'] is True
+    assert data['img_metas'].data['pcd_horizontal_flip'] is True
+    assert data['points']._data.shape == (537, 5)
 
     data = nus_dataset[1]
     assert data['img_metas'].data['flip'] is False

@@ -5,14 +5,14 @@ from .builder import DATASETS
 
 @DATASETS.register_module()
 class CBGSDataset(object):
-    """A wrapper of class sampled dataset with ann_file path.
-    https://arxiv.org/abs/1908.09492.
+    """A wrapper of class sampled dataset with ann_file path. Implementation of
+    paper `Class-balanced Grouping and Sampling for Point Cloud 3D Object
+    Detection <https://arxiv.org/abs/1908.09492.>`_.
 
     Balance the number of scenes under different classes.
 
     Args:
         dataset (:obj:`CustomDataset`): The dataset to be class sampled.
-        ann_file (str): Path of annotation file.
     """
 
     def __init__(self, dataset):
@@ -34,7 +34,11 @@ class CBGSDataset(object):
         Returns:
             list[dict]: List of annotations after class sampling.
         """
-        class_sample_idx = self.dataset.get_cat_ids()
+        class_sample_idxs = {name: [] for name in self.CLASSES}
+        for idx in range(len(self.dataset)):
+            class_sample_idx = self.dataset.get_cat_ids(idx)
+            for key in class_sample_idxs.keys():
+                class_sample_idxs[key] += class_sample_idx[key]
         duplicated_samples = sum([len(v) for _, v in class_sample_idx.items()])
         class_distribution = {
             k: len(v) / duplicated_samples
