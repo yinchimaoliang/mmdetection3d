@@ -51,9 +51,11 @@ class CBGSDataset(object):
         frac = 1.0 / len(self.CLASSES)
         ratios = [frac / v for v in class_distribution.values()]
         for cls_inds, ratio in zip(list(class_sample_idxs.values()), ratios):
-            sample_indices += np.random.choice(cls_inds,
-                                               int(len(cls_inds) *
-                                                   ratio)).tolist()
+
+            sample_indices += cls_inds[:int(len(cls_inds) * ratio)]
+            # sample_indices += np.random.choice(cls_inds,
+            #                                    int(len(cls_inds) *
+            #                                        ratio)).tolist()
         return sample_indices
 
     def __getitem__(self, idx):
@@ -62,6 +64,7 @@ class CBGSDataset(object):
         Returns:
             dict: Data dictionary of the corresponding index.
         """
+        idx = 2001
         ori_idx = self.sample_indices[idx]
         return self.dataset[ori_idx]
 

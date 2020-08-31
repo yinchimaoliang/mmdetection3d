@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+import pdb
 import torch
 from mmcv.cnn import build_conv_layer, build_norm_layer, kaiming_init
 from torch import nn
@@ -368,6 +369,7 @@ class CenterHead(nn.Module):
         Returns:
             list[dict]: Output results for tasks.
         """
+        pdb.set_trace()
         ret_dicts = []
 
         x = self.shared_conv(x)
@@ -623,7 +625,7 @@ class CenterHead(nn.Module):
             loc_loss = (box_loss * box_loss.new_tensor(code_weights)).sum()
             loss_dict[f'hm_loss_task{task_id}'] = hm_loss
             loss_dict[f'loc_loss_task{task_id}'] = loc_loss
-
+        pdb.set_trace()
         return loss_dict
 
     def get_bboxes(self, preds_dicts, img_metas, img=None, rescale=False):
