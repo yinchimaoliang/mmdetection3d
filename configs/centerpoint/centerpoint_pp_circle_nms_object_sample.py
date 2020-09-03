@@ -72,15 +72,15 @@ train_pipeline = [
         remove_close=True),
     dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
     dict(type='ObjectSample', db_sampler=db_sampler),
-    # dict(
-    #     type='GlobalRotScaleTrans',
-    #     rot_range=[-0.3925, 0.3925],
-    #     scale_ratio_range=[0.95, 1.05],
-    #     translation_std=[0, 0, 0]),
-    # dict(
-    #     type='RandomFlip3D',
-    #     flip_ratio_bev_horizontal=0.5,
-    #     flip_ratio_bev_vertical=0.5),
+    dict(
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.3925, 0.3925],
+        scale_ratio_range=[0.95, 1.05],
+        translation_std=[0, 0, 0]),
+    dict(
+        type='RandomFlip3D',
+        flip_ratio_bev_horizontal=0.5,
+        flip_ratio_bev_vertical=0.5),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='ObjectNameFilter', classes=class_names),
@@ -122,8 +122,8 @@ test_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=0,
+    samples_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type='CBGSDataset',
         dataset=dict(
@@ -161,7 +161,7 @@ data = dict(
 # interval to be 24. Please change the interval accordingly if you do not
 # use a default schedule.
 
-optimizer = dict(type='AdamW', lr=0.001, weight_decay=0.01)
+optimizer = dict(type='AdamW', lr=1e-4, weight_decay=0.01)
 # max_norm=10 is better for SECOND
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(
