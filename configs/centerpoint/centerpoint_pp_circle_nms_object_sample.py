@@ -79,6 +79,7 @@ train_pipeline = [
         translation_std=[0, 0, 0]),
     dict(
         type='RandomFlip3D',
+        sync_2d=False,
         flip_ratio_bev_horizontal=0.5,
         flip_ratio_bev_vertical=0.5),
     dict(type='PointsRangeFilter', point_cloud_range=point_cloud_range),
