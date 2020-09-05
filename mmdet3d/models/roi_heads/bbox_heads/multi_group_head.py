@@ -778,10 +778,10 @@ class CenterHead(nn.Module):
                     top_labels = top_labels[top_scores_keep]
                 # boxes_for_nms = box_preds[:, [0, 1, 3, 4, -1]]
 
+                box_preds = box_preds[:, [0, 1, 2, 3, 4, 5, 8, 6, 7]]
                 boxes_for_nms = xywhr2xyxyr(img_metas[i]['box_type_3d'](
                     box_preds, self.bbox_coder.code_size).bev)
                 # the nms in 3d detection just remove overlap boxes.
-
                 selected = nms_gpu(
                     boxes_for_nms,
                     top_scores,
@@ -790,7 +790,6 @@ class CenterHead(nn.Module):
                     post_max_size=self.test_cfg['nms_post_max_size'])
             else:
                 selected = []
-
             # if selected is not None:
             selected_boxes = box_preds[selected]
             selected_labels = top_labels[selected]
