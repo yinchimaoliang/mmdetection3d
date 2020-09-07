@@ -86,6 +86,9 @@ class DataBaseSampler(object):
         prepare (dict): Name of preparation functions and the input value.
         sample_groups (dict): Sampled classes and numbers.
         classes (list[str]): List of classes. Default: None.
+        load_dim (int): Dimension number of the loaded points. Defaults to 4.
+        use_dim (list[int] | int): Which dimension to use. Defaults to
+            [0, 1, 2, 3].
     """
 
     def __init__(self,
@@ -106,6 +109,8 @@ class DataBaseSampler(object):
         self.cat2label = {name: i for i, name in enumerate(classes)}
         self.label2cat = {i: name for i, name in enumerate(classes)}
         self.load_dim = load_dim
+        if isinstance(use_dim, int):
+            use_dim = list(range(use_dim))
         self.use_dim = use_dim
 
         with open(info_path, 'rb') as f:
