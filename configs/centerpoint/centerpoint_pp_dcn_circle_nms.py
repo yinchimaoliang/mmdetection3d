@@ -1,6 +1,6 @@
 _base_ = [
     '../_base_/models/centerpoint_pp_dcn_circle_nms.py',
-    '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
+    '../_base_/default_runtime.py'
 ]
 
 # If point cloud range is changed, the models should also change their point
@@ -22,6 +22,41 @@ input_modality = dict(
     use_map=False,
     use_external=False)
 file_client_args = dict(backend='disk')
+
+db_sampler = dict(
+    data_root=data_root,
+    info_path=data_root + 'nuscenes_dbinfos_train.pkl',
+    rate=1.0,
+    prepare=dict(
+        filter_by_difficulty=[-1],
+        filter_by_min_points=dict(
+            car=5,
+            truck=5,
+            bus=5,
+            trailer=5,
+            construction_vehicle=5,
+            traffic_cone=5,
+            barrier=5,
+            motorcycle=5,
+            bicycle=5,
+            pedestrian=5,
+        )),
+    classes=class_names,
+    sample_groups=dict(
+        car=2,
+        truck=3,
+        construction_vehicle=7,
+        bus=4,
+        trailer=6,
+        barrier=2,
+        motorcycle=6,
+        bicycle=6,
+        pedestrian=2,
+        traffic_cone=2,
+    ),
+    load_dim=5,
+    use_dim=[0, 1, 2, 3, 4])
+
 train_pipeline = [
     dict(
         type='LoadPointsFromFile',
@@ -36,6 +71,7 @@ train_pipeline = [
         pad_empty_sweeps=True,
         remove_close=True),
     dict(type='LoadAnnotations3D', with_bbox_3d=True, with_label_3d=True),
+    dict(type='ObjectSample', db_sampler=db_sampler),
     dict(
         type='GlobalRotScaleTrans',
         rot_range=[-0.3925, 0.3925],
@@ -111,8 +147,7 @@ data = dict(
         classes=class_names,
         modality=input_modality,
         test_mode=True,
-        box_type_3d='LiDAR',
-        use_valid_flag=True),
+        box_type_3d='LiDAR'),
     test=dict(
         type=dataset_type,
         data_root=data_root,
@@ -126,4 +161,22 @@ data = dict(
 # Since the models are trained by 24 epochs by default, we set evaluation
 # interval to be 24. Please change the interval accordingly if you do not
 # use a default schedule.
-evaluation = dict(interval=24)
+
+optimizer = dict(type='AdamW', lr=1e-4, weight_decay=0.01)
+# max_norm=10 is better for SECOND
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
+lr_config = dict(
+    policy='cyclic',
+    target_ratio=(10, 1e-4),
+    cyclic_times=1,
+    step_ratio_up=0.4,
+)
+momentum_config = dict(
+    policy='cyclic',
+    target_ratio=(0.85 / 0.95, 1),
+    cyclic_times=1,
+    step_ratio_up=0.4,
+)
+
+# runtime settings
+total_epochs = 20
