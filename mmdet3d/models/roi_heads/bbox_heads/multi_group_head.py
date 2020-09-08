@@ -23,8 +23,8 @@ class CenterPointFeatureAdaption(FeatureAdaption):
     Args:
         in_channels (int): Number of channels in the input feature map.
         out_channels (int): Number of channels in the output feature map.
-        kernel_size (int): Deformable conv kernel size.
-        deform_groups (int): Deformable conv group size.
+        kernel_size (int): Deformable conv kernel size. Default: 3
+        deform_groups (int): Deformable conv group size. Default: 4
     """
 
     def __init__(self,
@@ -115,6 +115,7 @@ class SepHead(nn.Module):
             self.__setattr__(head, fc)
 
     def init_weights(self):
+        """Initialize weights."""
         for head in self.heads:
             if head == 'hm':
                 self.__getattr__(head)[-1].bias.data.fill_(self.init_bias)
@@ -131,7 +132,9 @@ class SepHead(nn.Module):
                 [B, 512, 128, 128].
 
         Returns:
-            dict:   -reg （torch.Tensor): 2D regression value with the
+            dict[str: torch.Tensor]: contains the following keys:
+
+                    -reg （torch.Tensor): 2D regression value with the
                         shape of [B, 2, H, W].
                     -height (torch.Tensor): Height value with the
                         shape of [B, 1, H, W].
@@ -355,6 +358,7 @@ class CenterHead(nn.Module):
                         final_kernel=3))
 
     def init_weights(self):
+        """Initialize weights."""
         for task in self.tasks:
             task.init_weights()
 
@@ -763,8 +767,6 @@ class CenterHead(nn.Module):
                 -labels (torch.Tensor): Prediction labels after nms with the
                     shape of [N].
         """
-        import pdb
-        pdb.set_trace()
         predictions_dicts = []
         post_center_range = self.test_cfg['post_center_limit_range']
         if len(post_center_range) > 0:
@@ -822,6 +824,7 @@ class CenterHead(nn.Module):
                     box_preds[:, [0, 1, 2, 3, 4, 5, 8, 6, 7]],
                     self.bbox_coder.code_size).bev)
                 # the nms in 3d detection just remove overlap boxes.
+
                 selected = nms_gpu(
                     boxes_for_nms,
                     top_scores,
@@ -830,6 +833,7 @@ class CenterHead(nn.Module):
                     post_max_size=self.test_cfg['nms_post_max_size'])
             else:
                 selected = []
+
             # if selected is not None:
             selected_boxes = box_preds[selected]
             selected_labels = top_labels[selected]
@@ -871,5 +875,4 @@ class CenterHead(nn.Module):
                                        device=device))
 
             predictions_dicts.append(predictions_dict)
-        pdb.set_trace()
         return predictions_dicts
