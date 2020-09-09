@@ -662,7 +662,7 @@ class CenterHead(nn.Module):
         for task_id, preds_dict in enumerate(preds_dicts):
             num_class_with_bg = self.num_classes[task_id]
             batch_size = preds_dict[0]['heatmap'].shape[0]
-            batch_heatmap = preds_dict[0]['heatmap'].sigmoid_()
+            batch_heatmap = preds_dict[0]['heatmap'].sigmoid()
 
             batch_reg = preds_dict[0]['reg']
             batch_hei = preds_dict[0]['height']
@@ -727,10 +727,7 @@ class CenterHead(nn.Module):
         for i in range(num_samples):
             for k in rets[0][i].keys():
                 if k == 'bboxes':
-                    bboxes = torch.cat([
-                        ret[i][k][:, [0, 1, 2, 3, 4, 5, 8, 6, 7]]
-                        for ret in rets
-                    ])
+                    bboxes = torch.cat([ret[i][k] for ret in rets])
                     bboxes[:, 2] = bboxes[:, 2] - bboxes[:, 5] * 0.5
                     bboxes = img_metas[i]['box_type_3d'](
                         bboxes, self.bbox_coder.code_size)
