@@ -17,7 +17,7 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
         max_num (int): Max number to be kept. Default: 100.
         score_threshold (float): Threshold to filter boxes based on score.
             Default: None.
-        code_size (int): Code size of bboxes.
+        code_size (int): Code size of bboxes. Default: 9
     """
 
     def __init__(self,
@@ -63,7 +63,7 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
 
         Args:
             scores (torch.Tensor): scores with the shape of [B, N, W, H].
-            K (int): Number to be kept. Defaults to 40.
+            K (int): Number to be kept. Defaults to 80.
 
         Returns:
             tuple[torch.Tensor]
@@ -78,11 +78,12 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
         topk_scores, topk_inds = torch.topk(scores.view(batch, cat, -1), K)
 
         topk_inds = topk_inds % (height * width)
-        topk_ys = (topk_inds / width).int().float()
+        topk_ys = (topk_inds.float() /
+                   torch.tensor(width, dtype=torch.float)).int().float()
         topk_xs = (topk_inds % width).int().float()
 
         topk_score, topk_ind = torch.topk(topk_scores.view(batch, -1), K)
-        topk_clses = (topk_ind / K).int()
+        topk_clses = (topk_ind / torch.tensor(K, dtype=torch.float)).int()
         topk_inds = self._gather_feat(topk_inds.view(batch, -1, 1),
                                       topk_ind).view(batch, K)
         topk_ys = self._gather_feat(topk_ys.view(batch, -1, 1),
@@ -111,14 +112,22 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
     def encode(self):
         pass
 
-    def decode(self, heat, rots, rotc, hei, dim, vel, reg=None, task_id=-1):
+    def decode(self,
+               heat,
+               rot_sine,
+               rot_cosine,
+               hei,
+               dim,
+               vel,
+               reg=None,
+               task_id=-1):
         """Decode bboxes.
 
         Args:
             heat (torch.Tensor): Heatmap with the shape of [B, N, W, H].
-            rots (torch.Tensor): Sin of rotation with the shape of
+            rot_sine (torch.Tensor): Sine of rotation with the shape of
                 [B, 1, W, H].
-            rotc (torch.Tensor): Cos of rotation with the shape of
+            rot_cosine (torch.Tensor): Cosine of rotation with the shape of
                 [B, 1, W, H].
             hei (torch.Tensor): Height of the boxes with the shape
                 of [B, 1, W, H].
@@ -146,12 +155,12 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
             ys = ys.view(batch, self.max_num, 1) + 0.5
 
         # rotation value and direction label
-        rots = self._transpose_and_gather_feat(rots, inds)
-        rots = rots.view(batch, self.max_num, 1)
+        rot_sine = self._transpose_and_gather_feat(rot_sine, inds)
+        rot_sine = rot_sine.view(batch, self.max_num, 1)
 
-        rotc = self._transpose_and_gather_feat(rotc, inds)
-        rotc = rotc.view(batch, self.max_num, 1)
-        rot = torch.atan2(rots, rotc)
+        rot_cosine = self._transpose_and_gather_feat(rot_cosine, inds)
+        rot_cosine = rot_cosine.view(batch, self.max_num, 1)
+        rot = torch.atan2(rot_sine, rot_cosine)
 
         # height in the bev
         hei = self._transpose_and_gather_feat(hei, inds)
@@ -177,7 +186,7 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
         else:  # exist velocity, nuscene format
             vel = self._transpose_and_gather_feat(vel, inds)
             vel = vel.view(batch, self.max_num, 2)
-            final_box_preds = torch.cat([xs, ys, hei, dim, vel, rot], dim=2)
+            final_box_preds = torch.cat([xs, ys, hei, dim, rot, vel], dim=2)
 
         final_scores = scores
         final_preds = clses
@@ -212,7 +221,7 @@ class CenterPointBBoxCoder(BaseBBoxCoder):
                 predictions_dicts.append(predictions_dict)
         else:
             raise NotImplementedError(
-                'Need to reorganize output as a batch so only '
+                'Need to reorganize output as a batch, only '
                 'support post_center_range is not None for now!')
 
         return predictions_dicts

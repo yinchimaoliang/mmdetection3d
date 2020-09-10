@@ -705,10 +705,7 @@ class CenterHead(nn.Module):
         for i in range(num_samples):
             for k in rets[0][i].keys():
                 if k == 'bboxes':
-                    bboxes = torch.cat([
-                        ret[i][k][:, [0, 1, 2, 3, 4, 5, 8, 6, 7]]
-                        for ret in rets
-                    ])
+                    bboxes = torch.cat([ret[i][k] for ret in rets])
                     bboxes[:, 2] = bboxes[:, 2] - bboxes[:, 5] * 0.5
                     bboxes = img_metas[i]['box_type_3d'](
                         bboxes, self.bbox_coder.code_size)
