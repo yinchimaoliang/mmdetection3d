@@ -4,11 +4,11 @@ import torch
 from mmcv.cnn import ConvModule, build_conv_layer, kaiming_init
 from torch import nn
 
-from mmdet3d.core import circle_nms, xywhr2xyxyr
+from mmdet3d.core import (circle_nms, draw_heatmap_gaussian, gaussian_radius,
+                          xywhr2xyxyr)
 from mmdet3d.models.utils import clip_sigmoid
 from mmdet3d.ops.iou3d.iou3d_utils import nms_gpu
 from mmdet.core import build_bbox_coder, multi_apply
-from mmdet.models.utils import gaussian_radius, gen_gaussian_target
 from ...builder import HEADS, build_loss
 
 
@@ -463,7 +463,7 @@ class CenterHead(nn.Module):
             task_boxes.append(torch.cat(task_box, axis=0).to(device))
             task_classes.append(torch.cat(task_class).long().to(device))
             flag2 += len(mask)
-        draw_gaussian = gen_gaussian_target
+        draw_gaussian = draw_heatmap_gaussian
         heatmaps, anno_boxes, inds, masks = [], [], [], []
 
         for idx, task in enumerate(self.tasks):
