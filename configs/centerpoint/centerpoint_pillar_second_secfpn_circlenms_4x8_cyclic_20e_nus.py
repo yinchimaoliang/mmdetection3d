@@ -1,4 +1,7 @@
-_base_ = ['../_base_/models/centerpoint_pp.py', '../_base_/default_runtime.py']
+_base_ = [
+    '../_base_/models/centerpoint_pillar_second_secfpn_circlenms_nus.py',
+    '../_base_/default_runtime.py'
+]
 
 # If point cloud range is changed, the models should also change their point
 # cloud range accordingly

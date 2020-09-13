@@ -1,5 +1,6 @@
 _base_ = [
-    '../_base_/models/centerpoint_01_voxel.py', '../_base_/default_runtime.py'
+    '../_base_/models/centerpoint_01voxel_second_secfpn_circlenms_nus.py',
+    '../_base_/default_runtime.py'
 ]
 
 # If point cloud range is changed, the models should also change their point
