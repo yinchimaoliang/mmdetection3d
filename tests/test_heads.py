@@ -838,7 +838,7 @@ def test_dcn_center_head():
     gt_labels_3d = [gt_labels_0, gt_labels_1]
     loss = dcn_center_head.loss(gt_bboxes_3d, gt_labels_3d, output)
     loss_sum = torch.sum(torch.stack([item for _, item in loss.items()]))
-    assert torch.isclose(loss_sum, torch.tensor(64317.9141))
+    assert torch.isclose(loss_sum, torch.tensor(21972.1230))
 
     # test get_bboxes
     img_metas = [
