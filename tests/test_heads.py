@@ -677,7 +677,8 @@ def test_center_head():
         score_threshold=0.1,
         pc_range=[-51.2, -51.2],
         out_size_factor=8,
-        voxel_size=[0.2, 0.2])
+        voxel_size=[0.2, 0.2],
+        norm_bbox=True)
     train_cfg = dict(
         grid_size=[1024, 1024, 40],
         point_cloud_range=[-51.2, -51.2, -5., 51.2, 51.2, 3.],
@@ -687,8 +688,7 @@ def test_center_head():
         gaussian_overlap=0.1,
         max_objs=500,
         code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0],
-        min_radius=2,
-        no_log=False)
+        min_radius=2)
     test_cfg = dict(
         post_center_limit_range=[-61.2, -61.2, -10.0, 61.2, 61.2, 10.0],
         max_per_img=500,
@@ -699,8 +699,7 @@ def test_center_head():
         pc_range=[-51.2, -51.2],
         out_size_factor=8,
         voxel_size=[0.2, 0.2],
-        nms_type='circle',
-        no_log=False)
+        nms_type='circle')
     center_head_cfg = dict(
         type='CenterHead',
         mode='3d',
@@ -788,7 +787,8 @@ def test_dcn_center_head():
             code_size=9),
         dcn_head=True,
         loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
-        loss_bbox=dict(type='L1Loss', reduction='none', loss_weight=0.25))
+        loss_bbox=dict(type='L1Loss', reduction='none', loss_weight=0.25),
+        norm_bbox=True)
     # model training and testing settings
     train_cfg = dict(
         grid_size=[512, 512, 1],
@@ -799,7 +799,6 @@ def test_dcn_center_head():
         gaussian_overlap=0.1,
         max_objs=500,
         min_radius=2,
-        no_log=False,
         code_weights=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2, 1.0, 1.0])
 
     test_cfg = dict(
@@ -812,8 +811,7 @@ def test_dcn_center_head():
         pc_range=[-51.2, -51.2],
         out_size_factor=4,
         voxel_size=voxel_size[:2],
-        nms_type='circle',
-        no_log=False)
+        nms_type='circle')
     dcn_center_head_cfg.update(train_cfg=train_cfg, test_cfg=test_cfg)
 
     dcn_center_head = build_head(dcn_center_head_cfg).cuda()

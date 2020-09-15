@@ -266,7 +266,8 @@ class CenterHead(nn.Module):
                  dcn_head=False,
                  conv_cfg=dict(type='Conv2d'),
                  norm_cfg=dict(type='BN2d'),
-                 bias='auto'):
+                 bias='auto',
+                 norm_bbox=True):
         super(CenterHead, self).__init__()
 
         num_classes = [len(t['class_names']) for t in tasks]
@@ -277,6 +278,7 @@ class CenterHead(nn.Module):
         self.use_sigmoid_score = True
         self.in_channels = in_channels
         self.num_classes = num_classes
+        self.norm_bbox = norm_bbox
 
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
@@ -404,9 +406,9 @@ class CenterHead(nn.Module):
         """
         heatmaps, anno_boxes, inds, masks = multi_apply(
             self.get_targets_single, gt_bboxes_3d, gt_labels_3d)
-
+        num_task = len(heatmaps[0])
         # transpose heatmaps
-        heatmaps_transed = [[] for _ in range(6)]
+        heatmaps_transed = [[] for _ in range(num_task)]
         for i in range(len(heatmaps)):
             for j in range(len(heatmaps[i])):
                 heatmaps_transed[j].append(heatmaps[i][j])
@@ -545,25 +547,17 @@ class CenterHead(nn.Module):
                     # TODO: support other outdoor dataset
                     vx, vy = task_boxes[idx][k][6:8]
                     rot = task_boxes[idx][k][8]
-                    if not self.train_cfg['no_log']:
-                        anno_box[new_idx] = torch.cat([
-                            ct - torch.tensor([x, y], device=device),
-                            z.unsqueeze(0), task_boxes[idx][k][3:6].log(),
-                            vx.unsqueeze(0),
-                            vy.unsqueeze(0),
-                            torch.sin(rot).unsqueeze(0),
-                            torch.cos(rot).unsqueeze(0)
-                        ])
-                    else:
-                        anno_box[new_idx] = torch.cat([
-                            ct - torch.tensor([x, y], device=device),
-                            z.unsqueeze(0), task_boxes[idx][k][3:6],
-                            vx.unsqueeze(0),
-                            vy.unsqueeze(0),
-                            torch.sin(rot).unsqueeze(0),
-                            torch.cos(rot).unsqueeze(0)
-                        ],
-                                                      dim=0)
+                    box_dim = task_boxes[idx][k][3:6]
+                    if self.norm_bbox:
+                        box_dim = box_dim.log()
+                    anno_box[new_idx] = torch.cat([
+                        ct - torch.tensor([x, y], device=device),
+                        z.unsqueeze(0), box_dim,
+                        vx.unsqueeze(0),
+                        vy.unsqueeze(0),
+                        torch.sin(rot).unsqueeze(0),
+                        torch.cos(rot).unsqueeze(0)
+                    ])
 
             heatmaps.append(heatmap)
             anno_boxes.append(anno_box)
@@ -654,7 +648,7 @@ class CenterHead(nn.Module):
             batch_reg = preds_dict[0]['reg']
             batch_hei = preds_dict[0]['height']
 
-            if not self.test_cfg['no_log']:
+            if self.norm_bbox:
                 batch_dim = torch.exp(preds_dict[0]['dim'])
             else:
                 batch_dim = preds_dict[0]['dim']
