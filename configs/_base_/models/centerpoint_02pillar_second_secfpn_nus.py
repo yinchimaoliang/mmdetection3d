@@ -45,13 +45,8 @@ model = dict(
             dict(num_class=2, class_names=['motorcycle', 'bicycle']),
             dict(num_class=2, class_names=['pedestrian', 'traffic_cone']),
         ],
-        common_heads={
-            'reg': (2, 2),
-            'height': (1, 2),
-            'dim': (3, 2),
-            'rot': (2, 2),
-            'vel': (2, 2)
-        },
+        common_heads=dict(
+            reg=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         share_conv_channel=64,
         bbox_coder=dict(
             type='CenterPointBBoxCoder',
