@@ -93,17 +93,17 @@ class SeparateHead(nn.Module):
         Returns:
             dict[str: torch.Tensor]: contains the following keys:
 
-                    -reg （torch.Tensor): 2D regression value with the
+                    -reg （torch.Tensor): 2D regression value with the \
                         shape of [B, 2, H, W].
-                    -height (torch.Tensor): Height value with the
+                    -height (torch.Tensor): Height value with the \
                         shape of [B, 1, H, W].
-                    -dim (torch.Tensor): Size value with the shape
+                    -dim (torch.Tensor): Size value with the shape \
                         of [B, 3, H, W].
-                    -rot (torch.Tensor): Rotation value with the
+                    -rot (torch.Tensor): Rotation value with the \
                         shape of [B, 2, H, W].
-                    -vel (torch.Tensor): Velocity value with the
+                    -vel (torch.Tensor): Velocity value with the \
                         shape of [B, 2, H, W].
-                    -heatmap (torch.Tensor): Heatmap with the shape of
+                    -heatmap (torch.Tensor): Heatmap with the shape of \
                         [B, N, H, W].
         """
         ret_dict = dict()
@@ -195,18 +195,18 @@ class DCNSeperateHead(nn.Module):
         Returns:
             dict[str: torch.Tensor]: contains the following keys:
 
-                    -reg （torch.Tensor): 2D regression value with the
-                        shape of [B, 2, H, W].
-                    -height (torch.Tensor): Height value with the
-                        shape of [B, 1, H, W].
-                    -dim (torch.Tensor): Size value with the shape
-                        of [B, 3, H, W].
-                    -rot (torch.Tensor): Rotation value with the
-                        shape of [B, 2, H, W].
-                    -vel (torch.Tensor): Velocity value with the
-                        shape of [B, 2, H, W].
-                    -heatmap (torch.Tensor): Heatmap with the shape of
-                        [B, N, H, W].
+                -reg （torch.Tensor): 2D regression value with the \
+                    shape of [B, 2, H, W].
+                -height (torch.Tensor): Height value with the \
+                    shape of [B, 1, H, W].
+                -dim (torch.Tensor): Size value with the shape \
+                    of [B, 3, H, W].
+                -rot (torch.Tensor): Rotation value with the \
+                    shape of [B, 2, H, W].
+                -vel (torch.Tensor): Velocity value with the \
+                    shape of [B, 2, H, W].
+                -heatmap (torch.Tensor): Heatmap with the shape of \
+                    [B, N, H, W].
         """
         center_feat = self.feature_adapt_cls(x)
         reg_feat = self.feature_adapt_reg(x)
@@ -226,7 +226,7 @@ class CenterHead(nn.Module):
         mode (str): Mode of the head. Default: '3d'.
         in_channels (list[int] | int): Channels of the input feature map.
             Default: [128].
-        tasks (list[dict]): Task information including class number
+        tasks (list[dict]): Task information including class number \
             and class names. Default: None.
         dataset (str): Name of the dataset. Default: 'nuscenes'.
         weight (float): Weight for location loss. Default: 0.25.
@@ -337,7 +337,7 @@ class CenterHead(nn.Module):
         """Forward function for CenterPoint.
 
         Args:
-            x (torch.Tensor): Input feature map with the shape of
+            x (torch.Tensor): Input feature map with the shape of \
                 [B, 512, 128, 128].
 
         Returns:
@@ -356,7 +356,7 @@ class CenterHead(nn.Module):
         """Forward pass.
 
         Args:
-            feats (list[torch.Tensor]): Multi-level features, e.g.,
+            feats (list[torch.Tensor]): Multi-level features, e.g., \
                 features produced by FPN.
 
         Returns:
@@ -371,9 +371,9 @@ class CenterHead(nn.Module):
 
         Args:
             feat (torch.tensor): Feature map with the shape of [B, H*W, 10].
-            ind (torch.Tensor): Index of the ground truth boxes with the
+            ind (torch.Tensor): Index of the ground truth boxes with the \
                 shape of [B, max_obj].
-            mask (torch.Tensor): Mask of the feature map with the shape
+            mask (torch.Tensor): Mask of the feature map with the shape \
                 of [B, max_obj]. Default: None.
 
         Returns:
@@ -393,7 +393,7 @@ class CenterHead(nn.Module):
         """Generate targets.
 
         Args:
-            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground
+            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground \
                 truth gt boxes.
             gt_labels_3d (list[torch.Tensor]): Labels of boxes.
 
@@ -441,12 +441,15 @@ class CenterHead(nn.Module):
             gt_labels_3d (torch.Tensor): Labels of boxes.
 
         Returns:
-            list[torch.Tensor]: Heatmap scores.
-            list[torch.Tensor]: Ground truth boxes.
-            list[torch.Tensor]: Indexes indicating the position
-                of the valid boxes.
-            list[torch.Tensor]: Masks indicating which boxes
-                are valid.
+            tuple[list[torch.Tensor]]: Tuple of target including \
+                the following results in order.
+
+                - list[torch.Tensor]: Heatmap scores.
+                - list[torch.Tensor]: Ground truth boxes.
+                - list[torch.Tensor]: Indexes indicating the position \
+                    of the valid boxes.
+                - list[torch.Tensor]: Masks indicating which boxes \
+                    are valid.
         """
         device = gt_labels_3d.device
         gt_bboxes_3d = torch.cat((gt_bboxes_3d.gravity_center,
@@ -569,26 +572,13 @@ class CenterHead(nn.Module):
         """Loss function for CenterHead.
 
         Args:
-            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground
+            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground \
                 truth gt boxes.
             gt_labels_3d (list[torch.Tensor]): Labels of boxes.
             preds_dicts (dict): Output of forward function.
 
         Returns:
-            dict: Computed losses.
-
-                - task0.loss_heatmap (torch.Tensor): Loss of heatmap for task0.
-                - task0.loss_bbox (torch.Tensor): Loss of location for task0.
-                - task1.loss_heatmap (torch.Tensor): Loss of heatmap for task1.
-                - task1.loss_bbox (torch.Tensor): Loss of location for task1.
-                - task2.loss_heatmap (torch.Tensor): Loss of heatmap for task2.
-                - task2.loss_bbox (torch.Tensor): Loss of location for task2.
-                - task3.loss_heatmap (torch.Tensor): Loss of heatmap for task3.
-                - task3.loss_bbox (torch.Tensor): Loss of location for task3.
-                - task4.loss_heatmap (torch.Tensor): Loss of heatmap for task4.
-                - task4.loss_bbox (torch.Tensor): Loss of location for task4.
-                - task5.loss_heatmap (torch.Tensor): Loss of heatmap for task5.
-                - task5.loss_bbox (torch.Tensor): Loss of location for task5.
+            dict[str:torch.Tensor]: Loss of heatmap and bbox of each task.
         """
         heatmaps, anno_boxes, inds, masks = self.get_targets(
             gt_bboxes_3d, gt_labels_3d)
@@ -729,22 +719,22 @@ class CenterHead(nn.Module):
 
         Args:
             num_class_with_bg (int): Number of classes for the current task.
-            batch_cls_preds (list[torch.Tensor]): Prediction score with the
+            batch_cls_preds (list[torch.Tensor]): Prediction score with the \
                 shape of [N].
-            batch_reg_preds (list[torch.Tensor]): Prediction bbox with the
+            batch_reg_preds (list[torch.Tensor]): Prediction bbox with the \
                 shape of [N, 9].
-            batch_cls_labels (list[torch.Tensor]): Prediction label with the
+            batch_cls_labels (list[torch.Tensor]): Prediction label with the \
                 shape of [N].
             img_metas (list[dict]): Meta information of each sample.
 
         Returns:
             list[dict[str: torch.Tensor]]: contains the following keys:
 
-                -bboxes (torch.Tensor): Prediction bboxes after nms with the
+                -bboxes (torch.Tensor): Prediction bboxes after nms with the \
                     shape of [N, 9].
-                -scores (torch.Tensor): Prediction scores after nms with the
+                -scores (torch.Tensor): Prediction scores after nms with the \
                     shape of [N].
-                -labels (torch.Tensor): Prediction labels after nms with the
+                -labels (torch.Tensor): Prediction labels after nms with the \
                     shape of [N].
         """
         predictions_dicts = []
