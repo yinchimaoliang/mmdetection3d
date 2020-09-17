@@ -437,7 +437,7 @@ class CenterHead(nn.Module):
         gt_bboxes_3d = torch.cat((gt_bboxes_3d.gravity_center,
                                   gt_bboxes_3d.tensor[:, [3, 4, 5, 7, 8, 6]]),
                                  dim=1).to(device)
-        gt_labels_3d += 1
+        gt_labels_3d
         max_objs = self.train_cfg['max_objs'] * self.train_cfg['dense_reg']
         grid_size = torch.tensor(self.train_cfg['grid_size'])
         pc_range = torch.tensor(self.train_cfg['point_cloud_range'])
@@ -450,7 +450,7 @@ class CenterHead(nn.Module):
         flag = 0
         for class_name in self.class_names:
             task_masks.append([
-                torch.where(gt_labels_3d == class_name.index(i) + 1 + flag)
+                torch.where(gt_labels_3d == class_name.index(i) + flag)
                 for i in class_name
             ])
             flag += len(class_name)
@@ -463,7 +463,7 @@ class CenterHead(nn.Module):
             task_class = []
             for m in mask:
                 task_box.append(gt_bboxes_3d[m])
-                task_class.append(gt_labels_3d[m] - flag2)
+                task_class.append(gt_labels_3d[m] + 1 - flag2)
             task_boxes.append(torch.cat(task_box, axis=0).to(device))
             task_classes.append(torch.cat(task_class).long().to(device))
             flag2 += len(mask)
