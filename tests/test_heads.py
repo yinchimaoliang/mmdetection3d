@@ -768,8 +768,7 @@ def test_center_head():
         score_threshold=0.1,
         pc_range=[-51.2, -51.2],
         out_size_factor=8,
-        voxel_size=[0.2, 0.2],
-        norm_bbox=True)
+        voxel_size=[0.2, 0.2])
     train_cfg = dict(
         grid_size=[1024, 1024, 40],
         point_cloud_range=[-51.2, -51.2, -5., 51.2, 51.2, 3.],
@@ -799,15 +798,10 @@ def test_center_head():
         train_cfg=train_cfg,
         test_cfg=test_cfg,
         bbox_coder=bbox_cfg,
-        common_heads={
-            'reg': (2, 2),
-            'height': (1, 2),
-            'dim': (3, 2),
-            'rot': (2, 2),
-            'vel': (2, 2)
-        },
+        common_heads=dict(
+            reg=(2, 2), height=(1, 2), dim=(3, 2), rot=(2, 2), vel=(2, 2)),
         share_conv_channel=64,
-    )
+        norm_bbox=True)
 
     center_head = build_head(center_head_cfg)
 
@@ -876,7 +870,18 @@ def test_dcn_center_head():
             out_size_factor=4,
             voxel_size=voxel_size[:2],
             code_size=9),
-        dcn_head=True,
+        seperate_head=dict(
+            type='DCNSeperateHead',
+            dcn_config=dict(
+                type='DCN',
+                in_channels=64,
+                out_channels=64,
+                kernel_size=3,
+                padding=1,
+                groups=4,
+                bias=True),
+            init_bias=-2.19,
+            final_kernel=3),
         loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
         loss_bbox=dict(type='L1Loss', reduction='none', loss_weight=0.25),
         norm_bbox=True)

@@ -139,7 +139,18 @@ model = dict(
     pts_bbox_head=dict(
         bbox_coder=dict(
             voxel_size=voxel_size[:2], pc_range=point_cloud_range[:2]),
-        dcn_head=True))
+        seperate_head=dict(
+            type='DCNSeperateHead',
+            dcn_config=dict(
+                type='DCN',
+                in_channels=64,
+                out_channels=64,
+                kernel_size=3,
+                padding=1,
+                groups=4,
+                bias=True),
+            init_bias=-2.19,
+            final_kernel=3)))
 
 train_cfg = dict(
     pts=dict(

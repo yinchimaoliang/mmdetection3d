@@ -9,6 +9,7 @@ from mmdet3d.core import (circle_nms, draw_heatmap_gaussian, gaussian_radius,
 from mmdet3d.models.utils import clip_sigmoid
 from mmdet3d.ops.iou3d.iou3d_utils import nms_gpu
 from mmdet.core import build_bbox_coder, multi_apply
+from ... import builder
 from ...builder import HEADS, build_loss
 
 
@@ -40,7 +41,7 @@ class SeparateHead(nn.Module):
                  norm_cfg=dict(type='BN2d'),
                  bias='auto',
                  **kwargs):
-        super(SeparateHead, self).__init__(**kwargs)
+        super(SeparateHead, self).__init__()
 
         self.heads = heads
         self.init_bias = init_bias
@@ -143,8 +144,9 @@ class DCNSeperateHead(nn.Module):
                  norm_cfg=dict(type='BN2d'),
                  bias='auto',
                  **kwargs):
-        super(DCNSeperateHead, self).__init__(**kwargs)
-
+        super(DCNSeperateHead, self).__init__()
+        if 'heatmap' in heads:
+            heads.pop('heatmap')
         # feature adaptation with dcn
         # use separate features for classification / regression
         self.feature_adapt_cls = build_conv_layer(dcn_config)
@@ -260,10 +262,10 @@ class CenterHead(nn.Module):
                  loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
                  loss_bbox=dict(
                      type='L1Loss', reduction='none', loss_weight=0.25),
-                 init_bias=-2.19,
+                 seperate_head=dict(
+                     type='SeparateHead', init_bias=-2.19, final_kernel=3),
                  share_conv_channel=64,
                  num_heatmap_convs=2,
-                 dcn_head=False,
                  conv_cfg=dict(type='Conv2d'),
                  norm_cfg=dict(type='BN2d'),
                  bias='auto',
@@ -303,30 +305,10 @@ class CenterHead(nn.Module):
 
         for num_cls in num_classes:
             heads = copy.deepcopy(common_heads)
-            if not dcn_head:
-                heads.update(dict(heatmap=(num_cls, num_heatmap_convs)))
-                self.tasks.append(
-                    SeparateHead(
-                        share_conv_channel,
-                        heads,
-                        init_bias=init_bias,
-                        final_kernel=3))
-            else:
-                self.tasks.append(
-                    DCNSeperateHead(
-                        share_conv_channel,
-                        num_cls,
-                        heads,
-                        dcn_config=dict(
-                            type='DCN',
-                            in_channels=share_conv_channel,
-                            out_channels=share_conv_channel,
-                            kernel_size=3,
-                            padding=1,
-                            groups=4,
-                            bias=True),
-                        init_bias=init_bias,
-                        final_kernel=3))
+            heads.update(dict(heatmap=(num_cls, num_heatmap_convs)))
+            seperate_head.update(
+                in_channels=share_conv_channel, heads=heads, num_cls=num_cls)
+            self.tasks.append(builder.build_head(seperate_head))
 
     def init_weights(self):
         """Initialize weights."""
