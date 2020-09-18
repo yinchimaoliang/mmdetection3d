@@ -431,9 +431,9 @@ class CenterHead(nn.Module):
                     are valid.
         """
         device = gt_labels_3d.device
-        gt_bboxes_3d = torch.cat((gt_bboxes_3d.gravity_center,
-                                  gt_bboxes_3d.tensor[:, [3, 4, 5, 7, 8, 6]]),
-                                 dim=1).to(device)
+        gt_bboxes_3d = torch.cat(
+            (gt_bboxes_3d.gravity_center, gt_bboxes_3d.tensor[:, 3:]),
+            dim=1).to(device)
         max_objs = self.train_cfg['max_objs'] * self.train_cfg['dense_reg']
         grid_size = torch.tensor(self.train_cfg['grid_size'])
         pc_range = torch.tensor(self.train_cfg['point_cloud_range'])
@@ -527,18 +527,18 @@ class CenterHead(nn.Module):
                     ind[new_idx] = y * feature_map_size[0] + x
                     mask[new_idx] = 1
                     # TODO: support other outdoor dataset
-                    vx, vy = task_boxes[idx][k][6:8]
-                    rot = task_boxes[idx][k][8]
+                    vx, vy = task_boxes[idx][k][7:]
+                    rot = task_boxes[idx][k][6]
                     box_dim = task_boxes[idx][k][3:6]
                     if self.norm_bbox:
                         box_dim = box_dim.log()
                     anno_box[new_idx] = torch.cat([
                         ct - torch.tensor([x, y], device=device),
                         z.unsqueeze(0), box_dim,
-                        vx.unsqueeze(0),
-                        vy.unsqueeze(0),
                         torch.sin(rot).unsqueeze(0),
-                        torch.cos(rot).unsqueeze(0)
+                        torch.cos(rot).unsqueeze(0),
+                        vx.unsqueeze(0),
+                        vy.unsqueeze(0)
                     ])
 
             heatmaps.append(heatmap)
@@ -574,8 +574,8 @@ class CenterHead(nn.Module):
             # reconstruct the anno_box from multiple reg heads
             preds_dict[0]['anno_box'] = torch.cat(
                 (preds_dict[0]['reg'], preds_dict[0]['height'],
-                 preds_dict[0]['dim'], preds_dict[0]['vel'],
-                 preds_dict[0]['rot']),
+                 preds_dict[0]['dim'], preds_dict[0]['rot'],
+                 preds_dict[0]['vel']),
                 dim=1)
 
             # Regression loss for dimension, offset, height, rotation
