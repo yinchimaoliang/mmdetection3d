@@ -117,10 +117,12 @@ class SeparateHead(nn.Module):
 
 @HEADS.register_module()
 class DCNSeperateHead(nn.Module):
-    """DCNSeperateHead for CenterHead.
+    r"""DCNSeperateHead for CenterHead.
 
-    0 -----> DCN for getmap task -----> heatmap task.
-    | -----> DCN for other tasks -----> other tasks
+    .. code-block:: none
+            /-----> DCN for heatmap task -----> heatmap task.
+    feature
+            \-----> DCN for regression tasks -----> regression tasks
 
     Args:
         in_channels (int): Input channels for conv_layer.
@@ -136,7 +138,7 @@ class DCNSeperateHead(nn.Module):
         norm_cfg (dict): Config of norm layer.
             Default: dict(type='BN2d').
         bias (str): Type of bias. Default: 'auto'.
-    """
+    """  # noqa: W605
 
     def __init__(self,
                  in_channels,
@@ -259,7 +261,6 @@ class CenterHead(nn.Module):
     """
 
     def __init__(self,
-                 mode='3d',
                  in_channels=[128],
                  tasks=None,
                  train_cfg=None,
@@ -500,27 +501,28 @@ class CenterHead(nn.Module):
                     x, y, z = task_boxes[idx][k][0], task_boxes[idx][k][
                         1], task_boxes[idx][k][2]
 
-                    coor_x, coor_y = (
+                    coor_x = (
                         x - pc_range[0]
-                    ) / voxel_size[0] / self.train_cfg['out_size_factor'], (
+                    ) / voxel_size[0] / self.train_cfg['out_size_factor']
+                    coor_y = (
                         y - pc_range[1]
                     ) / voxel_size[1] / self.train_cfg['out_size_factor']
 
-                    ct = torch.tensor([coor_x, coor_y],
-                                      dtype=torch.float32,
-                                      device=device)
-                    ct_int = ct.to(torch.int32)
+                    center = torch.tensor([coor_x, coor_y],
+                                          dtype=torch.float32,
+                                          device=device)
+                    center_int = center.to(torch.int32)
 
                     # throw out not in range objects to avoid out of array
                     # area when creating the heatmap
-                    if not (0 <= ct_int[0] < feature_map_size[0]
-                            and 0 <= ct_int[1] < feature_map_size[1]):
+                    if not (0 <= center_int[0] < feature_map_size[0]
+                            and 0 <= center_int[1] < feature_map_size[1]):
                         continue
 
-                    draw_gaussian(heatmap[cls_id], ct_int, radius)
+                    draw_gaussian(heatmap[cls_id], center_int, radius)
 
                     new_idx = k
-                    x, y = ct_int[0], ct_int[1]
+                    x, y = center_int[0], center_int[1]
 
                     assert (y * feature_map_size[0] + x <
                             feature_map_size[0] * feature_map_size[1])
@@ -534,7 +536,7 @@ class CenterHead(nn.Module):
                     if self.norm_bbox:
                         box_dim = box_dim.log()
                     anno_box[new_idx] = torch.cat([
-                        ct - torch.tensor([x, y], device=device),
+                        center - torch.tensor([x, y], device=device),
                         z.unsqueeze(0), box_dim,
                         torch.sin(rot).unsqueeze(0),
                         torch.cos(rot).unsqueeze(0),
@@ -591,12 +593,12 @@ class CenterHead(nn.Module):
 
             code_weights = self.train_cfg.get('code_weights', None)
             bbox_weights = mask * mask.new_tensor(code_weights)
-            loss_bbox = (
-                torch.sum(self.loss_bbox(pred, target_box, bbox_weights), 1) /
-                (num + 1e-4)).sum()
+            loss_bbox = self.loss_bbox(
+                pred, target_box, bbox_weights, avg_factor=(num + 1e-4))
             loss_dict[f'task{task_id}.loss_heatmap'] = loss_heatmap
             loss_dict[f'task{task_id}.loss_bbox'] = loss_bbox
-
+        import pdb
+        pdb.set_trace()
         return loss_dict
 
     def get_bboxes(self, preds_dicts, img_metas, img=None, rescale=False):
@@ -749,8 +751,7 @@ class CenterHead(nn.Module):
                 top_labels = torch.zeros(
                     total_scores.shape[0],
                     device=total_scores.device,
-                    dtype=torch.long,
-                )
+                    dtype=torch.long)
 
             else:
                 top_labels = cls_labels.long()
