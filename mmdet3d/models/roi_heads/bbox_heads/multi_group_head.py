@@ -119,6 +119,9 @@ class SeparateHead(nn.Module):
 class DCNSeperateHead(nn.Module):
     """DCNSeperateHead for CenterHead.
 
+    0 -----> DCN for getmap task -----> heatmap task.
+    | -----> DCN for other tasks -----> other tasks
+
     Args:
         in_channels (int): Input channels for conv_layer.
         heads (dict): Conv information.
