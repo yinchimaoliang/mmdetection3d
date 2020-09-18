@@ -236,7 +236,7 @@ class CenterHead(nn.Module):
         mode (str): Mode of the head. Default: '3d'.
         in_channels (list[int] | int): Channels of the input feature map.
             Default: [128].
-        tasks (list[dict]): Task information including class number \
+        tasks (list[dict]): Task information including class number
             and class names. Default: None.
         dataset (str): Name of the dataset. Default: 'nuscenes'.
         weight (float): Weight for location loss. Default: 0.25.
@@ -247,7 +247,7 @@ class CenterHead(nn.Module):
             Default: dict(type='GaussianFocalLoss', reduction='mean').
         loss_bbox (dict): Config of regression loss function.
             Default: dict(type='L1Loss', reduction='none').
-        seperate_head (dict): Config of seperate head. Default: dict( \
+        seperate_head (dict): Config of seperate head. Default: dict(
             type='SeparateHead', init_bias=-2.19, final_kernel=3)
         share_conv_channel (int): Output channels for share_conv_layer.
             Default: 64.
@@ -325,7 +325,7 @@ class CenterHead(nn.Module):
         """Forward function for CenterPoint.
 
         Args:
-            x (torch.Tensor): Input feature map with the shape of \
+            x (torch.Tensor): Input feature map with the shape of
                 [B, 512, 128, 128].
 
         Returns:
@@ -344,7 +344,7 @@ class CenterHead(nn.Module):
         """Forward pass.
 
         Args:
-            feats (list[torch.Tensor]): Multi-level features, e.g., \
+            feats (list[torch.Tensor]): Multi-level features, e.g.,
                 features produced by FPN.
 
         Returns:
@@ -359,9 +359,9 @@ class CenterHead(nn.Module):
 
         Args:
             feat (torch.tensor): Feature map with the shape of [B, H*W, 10].
-            ind (torch.Tensor): Index of the ground truth boxes with the \
+            ind (torch.Tensor): Index of the ground truth boxes with the
                 shape of [B, max_obj].
-            mask (torch.Tensor): Mask of the feature map with the shape \
+            mask (torch.Tensor): Mask of the feature map with the shape
                 of [B, max_obj]. Default: None.
 
         Returns:
@@ -381,7 +381,7 @@ class CenterHead(nn.Module):
         """Generate targets.
 
         Args:
-            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground \
+            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground
                 truth gt boxes.
             gt_labels_3d (list[torch.Tensor]): Labels of boxes.
 
@@ -554,7 +554,7 @@ class CenterHead(nn.Module):
         """Loss function for CenterHead.
 
         Args:
-            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground \
+            gt_bboxes_3d (list[:obj:`LiDARInstance3DBoxes`]): Ground
                 truth gt boxes.
             gt_labels_3d (list[torch.Tensor]): Labels of boxes.
             preds_dicts (dict): Output of forward function.
@@ -597,8 +597,6 @@ class CenterHead(nn.Module):
                 pred, target_box, bbox_weights, avg_factor=(num + 1e-4))
             loss_dict[f'task{task_id}.loss_heatmap'] = loss_heatmap
             loss_dict[f'task{task_id}.loss_bbox'] = loss_bbox
-        import pdb
-        pdb.set_trace()
         return loss_dict
 
     def get_bboxes(self, preds_dicts, img_metas, img=None, rescale=False):
@@ -701,11 +699,11 @@ class CenterHead(nn.Module):
 
         Args:
             num_class_with_bg (int): Number of classes for the current task.
-            batch_cls_preds (list[torch.Tensor]): Prediction score with the \
+            batch_cls_preds (list[torch.Tensor]): Prediction score with the
                 shape of [N].
-            batch_reg_preds (list[torch.Tensor]): Prediction bbox with the \
+            batch_reg_preds (list[torch.Tensor]): Prediction bbox with the
                 shape of [N, 9].
-            batch_cls_labels (list[torch.Tensor]): Prediction label with the \
+            batch_cls_labels (list[torch.Tensor]): Prediction label with the
                 shape of [N].
             img_metas (list[dict]): Meta information of each sample.
 
