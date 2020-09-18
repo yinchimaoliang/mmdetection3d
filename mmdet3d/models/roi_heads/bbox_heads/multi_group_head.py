@@ -305,18 +305,18 @@ class CenterHead(nn.Module):
             norm_cfg=norm_cfg,
             bias=bias)
 
-        self.tasks = nn.ModuleList()
+        self.task_heads = nn.ModuleList()
 
         for num_cls in num_classes:
             heads = copy.deepcopy(common_heads)
             heads.update(dict(heatmap=(num_cls, num_heatmap_convs)))
             seperate_head.update(
                 in_channels=share_conv_channel, heads=heads, num_cls=num_cls)
-            self.tasks.append(builder.build_head(seperate_head))
+            self.task_heads.append(builder.build_head(seperate_head))
 
     def init_weights(self):
         """Initialize weights."""
-        for task in self.tasks:
+        for task in self.task_heads:
             task.init_weights()
 
     def forward_single(self, x):
@@ -333,7 +333,7 @@ class CenterHead(nn.Module):
 
         x = self.shared_conv(x)
 
-        for task in self.tasks:
+        for task in self.task_heads:
             ret_dicts.append(task(x))
 
         return ret_dicts
@@ -397,29 +397,17 @@ class CenterHead(nn.Module):
         """
         heatmaps, anno_boxes, inds, masks = multi_apply(
             self.get_targets_single, gt_bboxes_3d, gt_labels_3d)
-        num_task = len(heatmaps[0])
-        # transpose heatmaps
-        heatmaps_transed = [[] for _ in range(num_task)]
-        for i in range(len(heatmaps)):
-            for j in range(len(heatmaps[i])):
-                heatmaps_transed[j].append(heatmaps[i][j])
-        heatmaps = [torch.stack(heatmaps_) for heatmaps_ in heatmaps_transed]
-
+        # transpose heatmaps, because the dimension of tensors in each task is
+        # different, we have to use numpy instead of torch to do the transpose.
+        heatmaps = np.array(heatmaps).transpose(1, 0).tolist()
+        heatmaps = [torch.stack(hms_) for hms_ in heatmaps]
         # transpose anno_boxes
-        anno_boxes_transed = [[] for _ in range(6)]
-        for i in range(len(anno_boxes)):
-            for j in range(len(anno_boxes[i])):
-                anno_boxes_transed[j].append(anno_boxes[i][j])
-        anno_boxes = [
-            torch.stack(anno_boxes_) for anno_boxes_ in anno_boxes_transed
-        ]
-
+        anno_boxes = np.array(anno_boxes).transpose(1, 0).tolist()
+        anno_boxes = [torch.stack(anno_boxes_) for anno_boxes_ in anno_boxes]
         # transpose inds
-        inds_transed = [[] for _ in range(6)]
-        for i in range(len(inds)):
-            for j in range(len(inds[i])):
-                inds_transed[j].append(inds[i][j])
-        inds = [torch.stack(inds_) for inds_ in inds_transed]
+        inds = np.array(inds).transpose(1, 0).tolist()
+        inds = [torch.stack(inds_) for inds_ in inds]
+        # transpose inds
         masks = np.array(masks).transpose(1, 0).tolist()
         masks = [torch.stack(masks_) for masks_ in masks]
         return heatmaps, anno_boxes, inds, masks
@@ -471,6 +459,7 @@ class CenterHead(nn.Module):
             task_class = []
             for m in mask:
                 task_box.append(gt_bboxes_3d[m])
+                # 0 is background for each task, so we need to add 1 here.
                 task_class.append(gt_labels_3d[m] + 1 - flag2)
             task_boxes.append(torch.cat(task_box, axis=0).to(device))
             task_classes.append(torch.cat(task_class).long().to(device))
@@ -478,7 +467,7 @@ class CenterHead(nn.Module):
         draw_gaussian = draw_heatmap_gaussian
         heatmaps, anno_boxes, inds, masks = [], [], [], []
 
-        for idx, task in enumerate(self.tasks):
+        for idx, task in enumerate(self.task_heads):
             heatmap = gt_bboxes_3d.new_zeros(
                 (len(self.class_names[idx]), feature_map_size[1],
                  feature_map_size[0]))
