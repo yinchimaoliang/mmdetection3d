@@ -690,68 +690,6 @@ def test_h3d_head():
     assert ret_dict['primitive_sem_matching_loss'] >= 0
 
 
-def test_ssd3d_head():
-    if not torch.cuda.is_available():
-        pytest.skip('test requires GPU and torch+cuda')
-    _setup_seed(0)
-    ssd3d_head_cfg = _get_vote_head_cfg('3dssd/3dssd_kitti-3d-car.py')
-    ssd3d_head_cfg.vote_module_cfg.num_points = 64
-    self = build_head(ssd3d_head_cfg).cuda()
-    sa_xyz = [torch.rand([2, 128, 3], dtype=torch.float32).cuda()]
-    sa_features = [torch.rand([2, 256, 128], dtype=torch.float32).cuda()]
-    sa_indices = [torch.randint(0, 64, [2, 128]).cuda()]
-
-    input_dict = dict(
-        sa_xyz=sa_xyz, sa_features=sa_features, sa_indices=sa_indices)
-
-    # test forward
-    ret_dict = self(input_dict, 'spec')
-    assert ret_dict['center'].shape == torch.Size([2, 64, 3])
-    assert ret_dict['obj_scores'].shape == torch.Size([2, 1, 64])
-    assert ret_dict['size'].shape == torch.Size([2, 64, 3])
-    assert ret_dict['dir_res'].shape == torch.Size([2, 64, 12])
-
-    # test loss
-    points = [torch.rand([4000, 4], device='cuda') for i in range(2)]
-    gt_bbox1 = LiDARInstance3DBoxes(torch.rand([5, 7], device='cuda'))
-    gt_bbox2 = LiDARInstance3DBoxes(torch.rand([5, 7], device='cuda'))
-    gt_bboxes = [gt_bbox1, gt_bbox2]
-    gt_labels = [
-        torch.zeros([5], dtype=torch.long, device='cuda') for i in range(2)
-    ]
-    img_metas = [dict(box_type_3d=LiDARInstance3DBoxes) for i in range(2)]
-    losses = self.loss(
-        ret_dict, points, gt_bboxes, gt_labels, img_metas=img_metas)
-
-    assert losses['centerness_loss'] >= 0
-    assert losses['center_loss'] >= 0
-    assert losses['dir_class_loss'] >= 0
-    assert losses['dir_res_loss'] >= 0
-    assert losses['size_res_loss'] >= 0
-    assert losses['corner_loss'] >= 0
-    assert losses['vote_loss'] >= 0
-
-    # test multiclass_nms_single
-    sem_scores = ret_dict['obj_scores'].transpose(1, 2)[0]
-    obj_scores = sem_scores.max(-1)[0]
-    bbox = self.bbox_coder.decode(ret_dict)[0]
-    input_meta = img_metas[0]
-    bbox_selected, score_selected, labels = self.multiclass_nms_single(
-        obj_scores, sem_scores, bbox, points[0], input_meta)
-    assert bbox_selected.shape[0] >= 0
-    assert bbox_selected.shape[1] == 7
-    assert score_selected.shape[0] >= 0
-    assert labels.shape[0] >= 0
-
-    # test get_boxes
-    points = torch.stack(points, 0)
-    results = self.get_bboxes(points, ret_dict, img_metas)
-    assert results[0][0].tensor.shape[0] >= 0
-    assert results[0][0].tensor.shape[1] == 7
-    assert results[0][1].shape[0] >= 0
-    assert results[0][2].shape[0] >= 0
-
-
 def test_center_head():
     tasks = [
         dict(num_class=1, class_names=['car']),
@@ -944,3 +882,65 @@ def test_dcn_center_head():
         assert ret_list[0].tensor.shape[0] <= 500
         assert ret_list[1].shape[0] <= 500
         assert ret_list[2].shape[0] <= 500
+
+
+def test_ssd3d_head():
+    if not torch.cuda.is_available():
+        pytest.skip('test requires GPU and torch+cuda')
+    _setup_seed(0)
+    ssd3d_head_cfg = _get_vote_head_cfg('3dssd/3dssd_kitti-3d-car.py')
+    ssd3d_head_cfg.vote_module_cfg.num_points = 64
+    self = build_head(ssd3d_head_cfg).cuda()
+    sa_xyz = [torch.rand([2, 128, 3], dtype=torch.float32).cuda()]
+    sa_features = [torch.rand([2, 256, 128], dtype=torch.float32).cuda()]
+    sa_indices = [torch.randint(0, 64, [2, 128]).cuda()]
+
+    input_dict = dict(
+        sa_xyz=sa_xyz, sa_features=sa_features, sa_indices=sa_indices)
+
+    # test forward
+    ret_dict = self(input_dict, 'spec')
+    assert ret_dict['center'].shape == torch.Size([2, 64, 3])
+    assert ret_dict['obj_scores'].shape == torch.Size([2, 1, 64])
+    assert ret_dict['size'].shape == torch.Size([2, 64, 3])
+    assert ret_dict['dir_res'].shape == torch.Size([2, 64, 12])
+
+    # test loss
+    points = [torch.rand([4000, 4], device='cuda') for i in range(2)]
+    gt_bbox1 = LiDARInstance3DBoxes(torch.rand([5, 7], device='cuda'))
+    gt_bbox2 = LiDARInstance3DBoxes(torch.rand([5, 7], device='cuda'))
+    gt_bboxes = [gt_bbox1, gt_bbox2]
+    gt_labels = [
+        torch.zeros([5], dtype=torch.long, device='cuda') for i in range(2)
+    ]
+    img_metas = [dict(box_type_3d=LiDARInstance3DBoxes) for i in range(2)]
+    losses = self.loss(
+        ret_dict, points, gt_bboxes, gt_labels, img_metas=img_metas)
+
+    assert losses['centerness_loss'] >= 0
+    assert losses['center_loss'] >= 0
+    assert losses['dir_class_loss'] >= 0
+    assert losses['dir_res_loss'] >= 0
+    assert losses['size_res_loss'] >= 0
+    assert losses['corner_loss'] >= 0
+    assert losses['vote_loss'] >= 0
+
+    # test multiclass_nms_single
+    sem_scores = ret_dict['obj_scores'].transpose(1, 2)[0]
+    obj_scores = sem_scores.max(-1)[0]
+    bbox = self.bbox_coder.decode(ret_dict)[0]
+    input_meta = img_metas[0]
+    bbox_selected, score_selected, labels = self.multiclass_nms_single(
+        obj_scores, sem_scores, bbox, points[0], input_meta)
+    assert bbox_selected.shape[0] >= 0
+    assert bbox_selected.shape[1] == 7
+    assert score_selected.shape[0] >= 0
+    assert labels.shape[0] >= 0
+
+    # test get_boxes
+    points = torch.stack(points, 0)
+    results = self.get_bboxes(points, ret_dict, img_metas)
+    assert results[0][0].tensor.shape[0] >= 0
+    assert results[0][0].tensor.shape[1] == 7
+    assert results[0][1].shape[0] >= 0
+    assert results[0][2].shape[0] >= 0

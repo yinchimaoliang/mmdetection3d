@@ -29,6 +29,7 @@ class SeparateHead(nn.Module):
             Default: dict(type='Conv2d')
         norm_cfg (dict): Config of norm layer.
             Default: dict(type='BN2d').
+        bias (str): Type of bias. Default: 'auto'.
     """
 
     def __init__(self,
@@ -94,18 +95,18 @@ class SeparateHead(nn.Module):
         Returns:
             dict[str: torch.Tensor]: contains the following keys:
 
-                    -reg （torch.Tensor): 2D regression value with the \
-                        shape of [B, 2, H, W].
-                    -height (torch.Tensor): Height value with the \
-                        shape of [B, 1, H, W].
-                    -dim (torch.Tensor): Size value with the shape \
-                        of [B, 3, H, W].
-                    -rot (torch.Tensor): Rotation value with the \
-                        shape of [B, 2, H, W].
-                    -vel (torch.Tensor): Velocity value with the \
-                        shape of [B, 2, H, W].
-                    -heatmap (torch.Tensor): Heatmap with the shape of \
-                        [B, N, H, W].
+                -reg （torch.Tensor): 2D regression value with the \
+                    shape of [B, 2, H, W].
+                -height (torch.Tensor): Height value with the \
+                    shape of [B, 1, H, W].
+                -dim (torch.Tensor): Size value with the shape \
+                    of [B, 3, H, W].
+                -rot (torch.Tensor): Rotation value with the \
+                    shape of [B, 2, H, W].
+                -vel (torch.Tensor): Velocity value with the \
+                    shape of [B, 2, H, W].
+                -heatmap (torch.Tensor): Heatmap with the shape of \
+                    [B, N, H, W].
         """
         ret_dict = dict()
         for head in self.heads:
@@ -121,6 +122,7 @@ class DCNSeperateHead(nn.Module):
     Args:
         in_channels (int): Input channels for conv_layer.
         heads (dict): Conv information.
+        dcn_config (dict): Config of dcn layer.
         num_cls (int): Output channels.
             Default: 64.
         final_kernal (int): Kernal size for the last conv layer.
@@ -130,6 +132,7 @@ class DCNSeperateHead(nn.Module):
             Default: dict(type='Conv2d')
         norm_cfg (dict): Config of norm layer.
             Default: dict(type='BN2d').
+        bias (str): Type of bias. Default: 'auto'.
     """
 
     def __init__(self,
@@ -239,16 +242,17 @@ class CenterHead(nn.Module):
             Default: dict(type='GaussianFocalLoss', reduction='mean').
         loss_bbox (dict): Config of regression loss function.
             Default: dict(type='L1Loss', reduction='none').
-        init_bias (float): Initial bias. Default: -2.19.
+        seperate_head (dict): Config of seperate head. Default: dict( \
+            type='SeparateHead', init_bias=-2.19, final_kernel=3)
         share_conv_channel (int): Output channels for share_conv_layer.
             Default: 64.
         num_heatmap_convs (int): Number of conv layers for heatmap conv layer.
             Default: 2.
-        dcn_head (bool): Whether to use dcn_head. Default: False.
         conv_cfg (dict): Config of conv layer.
             Default: dict(type='Conv2d')
         norm_cfg (dict): Config of norm layer.
             Default: dict(type='BN2d').
+        bias (str): Type of bias. Default: 'auto'.
     """
 
     def __init__(self,
@@ -380,11 +384,16 @@ class CenterHead(nn.Module):
             gt_labels_3d (list[torch.Tensor]): Labels of boxes.
 
         Returns:
-            list[torch.Tensor]: Heatmap scores.
-            list[torch.Tensor]: Ground truth boxes.
-            list[torch.Tensor]: Indexes indicating the
-                position of the valid boxes.
-            list[torch.Tensor]: Masks indicating which boxes are valid.
+            Returns:
+                tuple[list[torch.Tensor]]: Tuple of target including \
+                    the following results in order.
+
+                    - list[torch.Tensor]: Heatmap scores.
+                    - list[torch.Tensor]: Ground truth boxes.
+                    - list[torch.Tensor]: Indexes indicating the \
+                        position of the valid boxes.
+                    - list[torch.Tensor]: Masks indicating which \
+                        boxes are valid.
         """
         heatmaps, anno_boxes, inds, masks = multi_apply(
             self.get_targets_single, gt_bboxes_3d, gt_labels_3d)
@@ -437,7 +446,6 @@ class CenterHead(nn.Module):
         gt_bboxes_3d = torch.cat((gt_bboxes_3d.gravity_center,
                                   gt_bboxes_3d.tensor[:, [3, 4, 5, 7, 8, 6]]),
                                  dim=1).to(device)
-        gt_labels_3d
         max_objs = self.train_cfg['max_objs'] * self.train_cfg['dense_reg']
         grid_size = torch.tensor(self.train_cfg['grid_size'])
         pc_range = torch.tensor(self.train_cfg['point_cloud_range'])
