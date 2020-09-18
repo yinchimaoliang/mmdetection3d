@@ -296,8 +296,6 @@ class CenterHead(nn.Module):
         self.num_anchor_per_locs = [n for n in num_classes]
         self.use_direction_classifier = False
 
-        self.bev_only = True if mode == 'bev' else False
-
         # a shared convolution
         self.shared_conv = ConvModule(
             in_channels,
@@ -319,8 +317,8 @@ class CenterHead(nn.Module):
 
     def init_weights(self):
         """Initialize weights."""
-        for task in self.task_heads:
-            task.init_weights()
+        for task_head in self.task_heads:
+            task_head.init_weights()
 
     def forward_single(self, x):
         """Forward function for CenterPoint.
@@ -470,7 +468,7 @@ class CenterHead(nn.Module):
         draw_gaussian = draw_heatmap_gaussian
         heatmaps, anno_boxes, inds, masks = [], [], [], []
 
-        for idx, task in enumerate(self.task_heads):
+        for idx, task_head in enumerate(self.task_heads):
             heatmap = gt_bboxes_3d.new_zeros(
                 (len(self.class_names[idx]), feature_map_size[1],
                  feature_map_size[0]))
