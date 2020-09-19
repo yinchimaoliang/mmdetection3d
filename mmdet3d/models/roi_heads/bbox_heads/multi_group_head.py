@@ -267,7 +267,10 @@ class CenterHead(nn.Module):
                  test_cfg=None,
                  bbox_coder=None,
                  common_heads=dict(),
-                 loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
+                 loss_cls=dict(
+                     type='GaussianFocalLoss',
+                     reduction='mean',
+                     use_sigmoid=True),
                  loss_bbox=dict(
                      type='L1Loss', reduction='none', loss_weight=0.25),
                  seperate_head=dict(
@@ -284,8 +287,6 @@ class CenterHead(nn.Module):
         self.class_names = [t['class_names'] for t in tasks]
         self.train_cfg = train_cfg
         self.test_cfg = test_cfg
-        self.encode_background_as_zeros = True
-        self.use_sigmoid_score = True
         self.in_channels = in_channels
         self.num_classes = num_classes
         self.norm_bbox = norm_bbox
@@ -293,9 +294,7 @@ class CenterHead(nn.Module):
         self.loss_cls = build_loss(loss_cls)
         self.loss_bbox = build_loss(loss_bbox)
         self.bbox_coder = build_bbox_coder(bbox_coder)
-        self.loss_aux = None
         self.num_anchor_per_locs = [n for n in num_classes]
-        self.use_direction_classifier = False
 
         # a shared convolution
         self.shared_conv = ConvModule(
@@ -733,14 +732,8 @@ class CenterHead(nn.Module):
             box_preds = box_preds.float()
             cls_preds = cls_preds.float()
 
-            if self.encode_background_as_zeros:
-                # this don't support softmax
-                assert self.use_sigmoid_score is True
-                # total_scores = torch.sigmoid(cls_preds)
-                total_scores = cls_preds
-            else:
-                # encode background as first element in one-hot vector
-                total_scores = torch.sigmoid(cls_preds)[..., 1:]
+            # total_scores = torch.sigmoid(cls_preds)
+            total_scores = cls_preds
 
             # Apply NMS in birdeye view
 
