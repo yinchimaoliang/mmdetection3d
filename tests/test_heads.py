@@ -730,7 +730,6 @@ def test_center_head():
         nms_type='circle')
     center_head_cfg = dict(
         type='CenterHead',
-        mode='3d',
         in_channels=sum([256, 256]),
         tasks=tasks,
         train_cfg=train_cfg,
@@ -781,6 +780,7 @@ def test_dcn_center_head():
     voxel_size = [0.2, 0.2, 8]
     dcn_center_head_cfg = dict(
         type='CenterHead',
+        mode='3d',
         in_channels=sum([128, 128, 128]),
         tasks=[
             dict(num_class=1, class_names=['car']),
@@ -820,7 +820,7 @@ def test_dcn_center_head():
             init_bias=-2.19,
             final_kernel=3),
         loss_cls=dict(type='GaussianFocalLoss', reduction='mean'),
-        loss_bbox=dict(type='L1Loss', reduction='mean', loss_weight=0.25),
+        loss_bbox=dict(type='L1Loss', reduction='none', loss_weight=0.25),
         norm_bbox=True)
     # model training and testing settings
     train_cfg = dict(
@@ -869,7 +869,7 @@ def test_dcn_center_head():
     gt_labels_3d = [gt_labels_0, gt_labels_1]
     loss = dcn_center_head.loss(gt_bboxes_3d, gt_labels_3d, output)
     loss_sum = torch.sum(torch.stack([item for _, item in loss.items()]))
-    assert torch.isclose(loss_sum, torch.tensor(21971.7402), atol=1e-3)
+    assert torch.isclose(loss_sum, torch.tensor(21972.1230))
 
     # test get_bboxes
     img_metas = [
