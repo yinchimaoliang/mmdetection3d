@@ -155,7 +155,7 @@ class ObjectSample(object):
                 in the result dict.
         """
         gt_bboxes_3d = input_dict['gt_bboxes_3d']
-        gt_labels_3d = input_dict['gt_labels_3d']
+        gt_labels_3d = np.array(input_dict['gt_labels_3d'], dtype=np.long)
 
         # change to float for blending operation
         points = input_dict['points']
