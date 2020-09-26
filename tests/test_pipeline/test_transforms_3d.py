@@ -1,9 +1,11 @@
 import mmcv
 import numpy as np
+import pytest
 import torch
 
 from mmdet3d.core import Box3DMode, CameraInstance3DBoxes, LiDARInstance3DBoxes
-from mmdet3d.datasets import ObjectNoise, ObjectSample
+from mmdet3d.datasets import (BackgroundPointsFilter, ObjectNoise,
+                              ObjectSample, RandomFlip3D)
 
 
 def test_remove_points_in_boxes():
@@ -35,7 +37,6 @@ def test_remove_points_in_boxes():
 
 
 def test_object_sample():
-    import pickle
     db_sampler = mmcv.ConfigDict({
         'data_root': './tests/data/kitti/',
         'info_path': './tests/data/kitti/kitti_dbinfos_train.pkl',
@@ -51,8 +52,6 @@ def test_object_sample():
             'Pedestrian': 6
         }
     })
-    with open('./tests/data/kitti/kitti_dbinfos_train.pkl', 'rb') as f:
-        db_infos = pickle.load(f)
     np.random.seed(0)
     object_sample = ObjectSample(db_sampler)
     points = np.fromfile(
@@ -60,17 +59,26 @@ def test_object_sample():
         np.float32).reshape(-1, 4)
     annos = mmcv.load('./tests/data/kitti/kitti_infos_train.pkl')
     info = annos[0]
+    rect = info['calib']['R0_rect'].astype(np.float32)
+    Trv2c = info['calib']['Tr_velo_to_cam'].astype(np.float32)
     annos = info['annos']
+    loc = annos['location']
+    dims = annos['dimensions']
+    rots = annos['rotation_y']
     gt_names = annos['name']
-    gt_bboxes_3d = db_infos['Pedestrian'][0]['box3d_lidar']
-    gt_bboxes_3d = LiDARInstance3DBoxes([gt_bboxes_3d])
-    CLASSES = ('Car', 'Pedestrian', 'Cyclist')
+
+    gt_bboxes_3d = np.concatenate([loc, dims, rots[..., np.newaxis]],
+                                  axis=1).astype(np.float32)
+    gt_bboxes_3d = CameraInstance3DBoxes(gt_bboxes_3d).convert_to(
+        Box3DMode.LIDAR, np.linalg.inv(rect @ Trv2c))
+    CLASSES = ('Pedestrian', 'Cyclist', 'Car')
     gt_labels = []
     for cat in gt_names:
         if cat in CLASSES:
             gt_labels.append(CLASSES.index(cat))
         else:
             gt_labels.append(-1)
+    gt_labels = np.array(gt_labels, dtype=np.long)
     input_dict = dict(
         points=points, gt_bboxes_3d=gt_bboxes_3d, gt_labels_3d=gt_labels)
     input_dict = object_sample(input_dict)
@@ -87,9 +95,9 @@ def test_object_sample():
                         'classes=[\'Pedestrian\', \'Cyclist\', \'Car\'], ' \
                         'sample_groups={\'Pedestrian\': 6}'
     assert repr_str == expected_repr_str
-    assert points.shape == (1177, 4)
-    assert gt_bboxes_3d.tensor.shape == (2, 7)
-    assert np.all(gt_labels_3d == [1, 0])
+    assert points.shape == (800, 4)
+    assert gt_bboxes_3d.tensor.shape == (1, 7)
+    assert np.all(gt_labels_3d == [0])
 
 
 def test_object_noise():
@@ -125,3 +133,101 @@ def test_object_noise():
     assert repr_str == expected_repr_str
     assert points.shape == (800, 4)
     assert torch.allclose(gt_bboxes_3d, expected_gt_bboxes_3d, 1e-3)
+
+
+def test_random_flip_3d():
+    random_flip_3d = RandomFlip3D(
+        flip_ratio_bev_horizontal=1.0, flip_ratio_bev_vertical=1.0)
+    points = np.array([[22.7035, 9.3901, -0.2848, 0.0000],
+                       [21.9826, 9.1766, -0.2698, 0.0000],
+                       [21.4329, 9.0209, -0.2578, 0.0000],
+                       [21.3068, 9.0205, -0.2558, 0.0000],
+                       [21.3400, 9.1305, -0.2578, 0.0000],
+                       [21.3291, 9.2099, -0.2588, 0.0000],
+                       [21.2759, 9.2599, -0.2578, 0.0000],
+                       [21.2686, 9.2982, -0.2588, 0.0000],
+                       [21.2334, 9.3607, -0.2588, 0.0000],
+                       [21.2179, 9.4372, -0.2598, 0.0000]])
+    bbox3d_fields = ['gt_bboxes_3d']
+    img_fields = []
+    box_type_3d = LiDARInstance3DBoxes
+    gt_bboxes_3d = LiDARInstance3DBoxes(
+        torch.tensor(
+            [[38.9229, 18.4417, -1.1459, 0.7100, 1.7600, 1.8600, -2.2652],
+             [12.7768, 0.5795, -2.2682, 0.5700, 0.9900, 1.7200, -2.5029],
+             [12.7557, 2.2996, -1.4869, 0.6100, 1.1100, 1.9000, -1.9390],
+             [10.6677, 0.8064, -1.5435, 0.7900, 0.9600, 1.7900, 1.0856],
+             [5.0903, 5.1004, -1.2694, 0.7100, 1.7000, 1.8300, -1.9136]]))
+    input_dict = dict(
+        points=points,
+        bbox3d_fields=bbox3d_fields,
+        box_type_3d=box_type_3d,
+        img_fields=img_fields,
+        gt_bboxes_3d=gt_bboxes_3d)
+    input_dict = random_flip_3d(input_dict)
+    points = input_dict['points']
+    gt_bboxes_3d = input_dict['gt_bboxes_3d'].tensor
+    expected_points = np.array([[22.7035, -9.3901, -0.2848, 0.0000],
+                                [21.9826, -9.1766, -0.2698, 0.0000],
+                                [21.4329, -9.0209, -0.2578, 0.0000],
+                                [21.3068, -9.0205, -0.2558, 0.0000],
+                                [21.3400, -9.1305, -0.2578, 0.0000],
+                                [21.3291, -9.2099, -0.2588, 0.0000],
+                                [21.2759, -9.2599, -0.2578, 0.0000],
+                                [21.2686, -9.2982, -0.2588, 0.0000],
+                                [21.2334, -9.3607, -0.2588, 0.0000],
+                                [21.2179, -9.4372, -0.2598, 0.0000]])
+    expected_gt_bboxes_3d = torch.tensor(
+        [[38.9229, -18.4417, -1.1459, 0.7100, 1.7600, 1.8600, 5.4068],
+         [12.7768, -0.5795, -2.2682, 0.5700, 0.9900, 1.7200, 5.6445],
+         [12.7557, -2.2996, -1.4869, 0.6100, 1.1100, 1.9000, 5.0806],
+         [10.6677, -0.8064, -1.5435, 0.7900, 0.9600, 1.7900, 2.0560],
+         [5.0903, -5.1004, -1.2694, 0.7100, 1.7000, 1.8300, 5.0552]])
+    repr_str = repr(random_flip_3d)
+    expected_repr_str = 'RandomFlip3D(sync_2d=True,' \
+                        'flip_ratio_bev_vertical=1.0)'
+    assert np.allclose(points, expected_points)
+    assert torch.allclose(gt_bboxes_3d, expected_gt_bboxes_3d)
+    assert repr_str == expected_repr_str
+
+
+def test_background_points_filter():
+    np.random.seed(0)
+    background_points_filter = BackgroundPointsFilter((0.5, 2.0, 0.5))
+    points = np.fromfile(
+        './tests/data/kitti/training/velodyne_reduced/000000.bin',
+        np.float32).reshape(-1, 4)
+    orig_points = points.copy()
+    annos = mmcv.load('./tests/data/kitti/kitti_infos_train.pkl')
+    info = annos[0]
+    rect = info['calib']['R0_rect'].astype(np.float32)
+    Trv2c = info['calib']['Tr_velo_to_cam'].astype(np.float32)
+    annos = info['annos']
+    loc = annos['location']
+    dims = annos['dimensions']
+    rots = annos['rotation_y']
+    gt_bboxes_3d = np.concatenate([loc, dims, rots[..., np.newaxis]],
+                                  axis=1).astype(np.float32)
+    gt_bboxes_3d = CameraInstance3DBoxes(gt_bboxes_3d).convert_to(
+        Box3DMode.LIDAR, np.linalg.inv(rect @ Trv2c))
+    extra_points = gt_bboxes_3d.corners.reshape(8, 3)[[1, 2, 5, 6], :]
+    extra_points[:, 2] += 0.1
+    extra_points = torch.cat([extra_points, extra_points.new_zeros(4, 1)], 1)
+    points = np.concatenate([points, extra_points.numpy()], 0)
+    input_dict = dict(points=points, gt_bboxes_3d=gt_bboxes_3d)
+    input_dict = background_points_filter(input_dict)
+
+    points = input_dict['points']
+    repr_str = repr(background_points_filter)
+    expected_repr_str = 'BackgroundPointsFilter(bbox_enlarge_range=' \
+                        '[[0.5, 2.0, 0.5]])'
+    assert repr_str == expected_repr_str
+    assert points.shape == (800, 4)
+    assert np.allclose(orig_points, points)
+
+    # test single float config
+    BackgroundPointsFilter(0.5)
+
+    # The length of bbox_enlarge_range should be 3
+    with pytest.raises(AssertionError):
+        BackgroundPointsFilter((0.5, 2.0))

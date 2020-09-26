@@ -8,13 +8,13 @@
 [![license](https://img.shields.io/github/license/open-mmlab/mmdetection3d.svg)](https://github.com/open-mmlab/mmdetection3d/blob/master/LICENSE)
 
 
-**News**: We released the codebase v0.1.0.
+**News**: We released the codebase v0.6.0.
 
 Documentation: https://mmdetection3d.readthedocs.io/
 
 ## Introduction
 
-The master branch works with **PyTorch 1.3 to 1.5**.
+The master branch works with **PyTorch 1.3 to 1.6**.
 
 MMDetection3D is an open source object detection toolbox based on PyTorch, towards the next-generation platform for general 3D detection. It is
 a part of the OpenMMLab project developed by [MMLab](http://mmlab.ie.cuhk.edu.hk/).
@@ -29,7 +29,8 @@ a part of the OpenMMLab project developed by [MMLab](http://mmlab.ie.cuhk.edu.hk
 
 - **Support indoor/outdoor 3D detection out of box**
 
-  It directly supports popular indoor and outdoor 3D detection datasets, including ScanNet, SUNRGB-D, nuScenes, Lyft, and KITTI.
+  It directly supports popular indoor and outdoor 3D detection datasets, including ScanNet, SUNRGB-D, Waymo, nuScenes, Lyft, and KITTI.
+  For nuScenes dataset, we also support nuImages dataset.
 
 - **Natural integration with 2D detection**
 
@@ -55,7 +56,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v0.1.0 was released in 9/7/2020.
+v0.6.0 was released in 20/9/2020.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 
 ## Benchmark and model zoo
@@ -69,8 +70,11 @@ Results and models are available in the [model zoo](docs/model_zoo.md).
 | PointPillars       | ☐        | ☐        | ☐        | ✗         | ☐     | ✓        | ☐     |
 | FreeAnchor         | ☐        | ☐        | ☐        | ✗         | ☐     | ✓        | ☐     |
 | VoteNet            | ✗        | ✗        | ✗        | ✓         | ✗     | ✗        | ✗     |
+| H3DNet            | ✗        | ✗        | ✗        | ✓         | ✗     | ✗        | ✗     |
+| 3DSSD            | ✗        | ✗        | ✗        | ✓         | ✗     | ✗        | ✗     |
 | Part-A2            | ☐        | ☐        | ☐        | ✗         | ☐     | ✓        | ☐     |
 | MVXNet             | ☐        | ☐        | ☐        | ✗         | ☐     | ✓        | ☐     |
+| CenterPoint        | ☐        | ☐        | ☐        | ✗         | ☐     | ✓        | ☐     |
 
 Other features
 - [x] [Dynamic Voxelization](configs/carafe/README.md)
@@ -83,7 +87,7 @@ Please refer to [install.md](docs/install.md) for installation and dataset prepa
 
 ## Get Started
 
-Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection. There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), and [adding new modules](docs/tutorials/new_modules.md).
+Please see [getting_started.md](docs/getting_started.md) for the basic usage of MMDetection3D. There are also tutorials for [finetuning models](docs/tutorials/finetune.md), [adding new dataset](docs/tutorials/new_dataset.md), [designing data pipeline](docs/tutorials/data_pipeline.md), [adding new modules](docs/tutorials/new_modules.md), and [waymo dataset](docs/tutorials/waymo.md).
 
 ## Contributing
 
@@ -93,22 +97,3 @@ We appreciate all contributions to improve MMDetection3D. Please refer to [CONTR
 
 MMDetection3D is an open source project that is contributed by researchers and engineers from various colleges and companies. We appreciate all the contributors as well as users who give valuable feedbacks.
 We wish that the toolbox and benchmark could serve the growing research community by providing a flexible toolkit to reimplement existing methods and develop their own new 3D detectors.
-
-## Citation
-
-If you use this toolbox or benchmark in your research, please cite this project.
-
-```
-@misc{mmdetection3d_2020,
-  title   = {{MMDetection3D}},
-  author  = {Zhang, Wenwei and Wu, Yuefeng and Wang, Tai and Li, Yinhao and
-             Lin, Kwan-Yee and Wang, Zhe and Shi, Jianping and Qian, Chen and
-             Chen, Kai, and Lin, Dahua and Loy, Chen Change},
-  howpublished = {\url{https://github.com/open-mmlab/mmdetection3d}},
-  year =         {2020}
-}
-```
-
-## Contact
-
-This repo is currently maintained by Wenwei Zhang ([@ZwwWayne](https://github.com/ZwwWayne)), Yuefeng Wu ([@xavierwu95](https://github.com/xavierwu95)), Tai Wang ([@Tai-Wang](https://github.com/Tai-Wang)), and Yinhao Li ([@yinchimaoliang](https://github.com/yinchimaoliang)).
