@@ -39,13 +39,16 @@ class Points_Sampler(nn.Module):
             kernel_size=1,
             in_channels=input_features,
             out_channels=mid_features)
+        self.bn = nn.BatchNorm1d(num_features=mid_features)
+        self.relu = nn.ReLU(inplace=True)
         self.fc = nn.Linear(mid_features, num_point[0] * 3)
 
     def forward(self, points_xyz, features):
         points_xyz = torch.transpose(points_xyz, 2, 1)
         points = torch.cat((points_xyz, features), dim=1)
         mid_features = F.max_pool1d(
-            self.mlp(points), kernel_size=points_xyz.shape[2])
+            self.relu(self.bn(self.mlp(points))),
+            kernel_size=points_xyz.shape[2])
         final_features = self.fc(
             mid_features.reshape((mid_features.shape[0], -1)))
         new_xyz = final_features.reshape(
