@@ -79,8 +79,15 @@ class PointSAModuleMSG(nn.Module):
         self.fps_mod_list = fps_mod
         self.fps_sample_range_list = fps_sample_range_list
 
-        self.points_sampler = Points_Sampler(self.num_point, self.fps_mod_list,
-                                             self.fps_sample_range_list)
+        self.points_sampler = Points_Sampler(
+            self.num_point, input_features=mlp_channels[0][0] + 3)
+
+        from mmdet3d.models.losses import ChamferDistance
+        self.chamfer_distance = ChamferDistance(
+            mode='l2',
+            reduction='sum',
+            loss_src_weight=1.0,
+            loss_dst_weight=1.0)
 
         for i in range(len(radii)):
             radius = radii[i]
@@ -153,9 +160,14 @@ class PointSAModuleMSG(nn.Module):
         elif target_xyz is not None:
             new_xyz = target_xyz.contiguous()
         else:
-            indices = self.points_sampler(points_xyz, features)
-            new_xyz = gather_points(xyz_flipped, indices).transpose(
-                1, 2).contiguous() if self.num_point is not None else None
+            new_xyz = self.points_sampler(points_xyz, features)
+            loss_source, loss_target, _, indices = self.chamfer_distance(
+                points_xyz, new_xyz, return_indices=True)
+            loss = loss_target + loss_source
+            loss.backward(retain_graph=True)
+            new_xyz = gather_points(xyz_flipped, indices.to(
+                torch.int32)).transpose(
+                    1, 2).contiguous() if self.num_point is not None else None
 
         for i in range(len(self.groupers)):
             # (B, C, num_point, nsample)

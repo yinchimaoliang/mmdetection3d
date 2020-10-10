@@ -1,5 +1,6 @@
 import torch
 from torch import nn as nn
+from torch.nn import functional as F
 
 from .furthest_point_sample import (furthest_point_sample,
                                     furthest_point_sample_with_dist)
@@ -31,21 +32,35 @@ def get_sampler_type(sampler_type):
 
 class Points_Sampler(nn.Module):
 
-    def __init__(self, num_point, fps_mod_list, fps_sample_range_list):
+    def __init__(self, num_point, input_features=4, mid_features=256):
         super(Points_Sampler, self).__init__()
         self.num_point = num_point
+        self.mlp = nn.Conv1d(
+            kernel_size=1,
+            in_channels=input_features,
+            out_channels=mid_features)
+        self.fc = nn.Linear(mid_features, num_point[0] * 3)
 
     def forward(self, points_xyz, features):
         indices = []
-        for npoint in self.num_point:
-            indices.append(
-                torch.randint(
-                    0,
-                    points_xyz.shape[1], (points_xyz.shape[0], npoint),
-                    dtype=torch.int32,
-                    device='cuda'))
-
-        indices = torch.cat(indices, dim=1)
+        points_xyz = torch.transpose(points_xyz, 2, 1)
+        points = torch.cat((points_xyz, features), dim=1)
+        mid_features = F.max_pool1d(
+            self.mlp(points), kernel_size=points_xyz.shape[2])
+        final_features = self.fc(
+            mid_features.reshape((mid_features.shape[0], -1)))
+        new_xyz = final_features.reshape(
+            (points_xyz.shape[0], self.num_point[0], -1))
+        return new_xyz
+        # for npoint in self.num_point:
+        #     indices.append(
+        #         torch.randint(
+        #             0,
+        #             points_xyz.shape[1], (points_xyz.shape[0], npoint),
+        #             dtype=torch.int32,
+        #             device='cuda'))
+        #
+        # indices = torch.cat(indices, dim=1)
 
         return indices
 
