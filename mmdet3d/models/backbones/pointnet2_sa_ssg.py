@@ -83,6 +83,13 @@ class PointNet2SASSG(BasePointNet):
                 fp_source_channel = cur_fp_mlps[-1]
                 fp_target_channel = skip_channel_list.pop()
 
+        from mmdet3d.models.losses import ChamferDistance
+        self.chamfer_distance = ChamferDistance(
+            mode='l2',
+            reduction='sum',
+            loss_src_weight=1.0,
+            loss_dst_weight=1.0)
+
     def forward(self, points):
         """Forward pass.
 
@@ -110,9 +117,15 @@ class PointNet2SASSG(BasePointNet):
         sa_features = [features]
         sa_indices = [indices]
 
+        losses = 0
         for i in range(self.num_sa):
-            cur_xyz, cur_features, cur_indices, losses = self.SA_modules[i](
+            cur_xyz, cur_features, cur_indices = self.SA_modules[i](
                 sa_xyz[i], sa_features[i])
+            loss_source, loss_target, _, _ = self.chamfer_distance(
+                sa_xyz[0], cur_xyz, return_indices=True)
+
+            losses += loss_source
+            losses += loss_target
             sa_xyz.append(cur_xyz)
             sa_features.append(cur_features)
             sa_indices.append(
@@ -133,5 +146,5 @@ class PointNet2SASSG(BasePointNet):
             fp_xyz=fp_xyz,
             fp_features=fp_features,
             fp_indices=fp_indices,
-            losses=losses)
+            losses=losses / 500)
         return ret

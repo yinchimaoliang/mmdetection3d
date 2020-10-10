@@ -42,7 +42,6 @@ class Points_Sampler(nn.Module):
         self.fc = nn.Linear(mid_features, num_point[0] * 3)
 
     def forward(self, points_xyz, features):
-        indices = []
         points_xyz = torch.transpose(points_xyz, 2, 1)
         points = torch.cat((points_xyz, features), dim=1)
         mid_features = F.max_pool1d(
@@ -61,8 +60,6 @@ class Points_Sampler(nn.Module):
         #             device='cuda'))
         #
         # indices = torch.cat(indices, dim=1)
-
-        return indices
 
 
 # class Points_Sampler(nn.Module):

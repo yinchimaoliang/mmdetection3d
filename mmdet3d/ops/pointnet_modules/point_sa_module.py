@@ -161,9 +161,8 @@ class PointSAModuleMSG(nn.Module):
             new_xyz = target_xyz.contiguous()
         else:
             new_xyz = self.points_sampler(points_xyz, features)
-            loss_source, loss_target, _, indices = self.chamfer_distance(
+            _, _, _, indices = self.chamfer_distance(
                 points_xyz, new_xyz, return_indices=True)
-            losses = loss_target + loss_source
             # loss.backward(retain_graph=True)
             new_xyz = gather_points(xyz_flipped, indices.to(
                 torch.int32)).transpose(
@@ -189,7 +188,7 @@ class PointSAModuleMSG(nn.Module):
             new_features = new_features.squeeze(-1)  # (B, mlp[-1], num_point)
             new_features_list.append(new_features)
 
-        return new_xyz, torch.cat(new_features_list, dim=1), indices, losses
+        return new_xyz, torch.cat(new_features_list, dim=1), indices
 
 
 @SA_MODULES.register_module()

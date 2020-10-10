@@ -186,7 +186,7 @@ class VoteHead(nn.Module):
                 f'Sample mode {sample_mod} is not supported!')
 
         vote_aggregation_ret = self.vote_aggregation(**aggregation_inputs)
-        aggregated_points, features, aggregated_indices, _ = \
+        aggregated_points, features, aggregated_indices = \
             vote_aggregation_ret
 
         results['aggregated_points'] = aggregated_points
