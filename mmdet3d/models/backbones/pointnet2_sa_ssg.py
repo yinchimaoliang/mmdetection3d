@@ -111,7 +111,7 @@ class PointNet2SASSG(BasePointNet):
         sa_indices = [indices]
 
         for i in range(self.num_sa):
-            cur_xyz, cur_features, cur_indices = self.SA_modules[i](
+            cur_xyz, cur_features, cur_indices, losses = self.SA_modules[i](
                 sa_xyz[i], sa_features[i])
             sa_xyz.append(cur_xyz)
             sa_features.append(cur_features)
@@ -130,5 +130,8 @@ class PointNet2SASSG(BasePointNet):
             fp_indices.append(sa_indices[self.num_sa - i - 1])
 
         ret = dict(
-            fp_xyz=fp_xyz, fp_features=fp_features, fp_indices=fp_indices)
+            fp_xyz=fp_xyz,
+            fp_features=fp_features,
+            fp_indices=fp_indices,
+            losses=losses)
         return ret

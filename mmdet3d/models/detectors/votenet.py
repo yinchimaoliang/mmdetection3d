@@ -53,11 +53,13 @@ class VoteNet(SingleStage3DDetector):
         points_cat = torch.stack(points)
 
         x = self.extract_feat(points_cat)
+        ds_loss = x.pop('losses')
         bbox_preds = self.bbox_head(x, self.train_cfg.sample_mod)
         loss_inputs = (points, gt_bboxes_3d, gt_labels_3d, pts_semantic_mask,
                        pts_instance_mask, img_metas)
         losses = self.bbox_head.loss(
             bbox_preds, *loss_inputs, gt_bboxes_ignore=gt_bboxes_ignore)
+        losses['ds_loss'] = ds_loss / 100
         return losses
 
     def simple_test(self, points, img_metas, imgs=None, rescale=False):
