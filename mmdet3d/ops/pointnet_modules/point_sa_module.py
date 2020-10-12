@@ -85,7 +85,7 @@ class PointSAModuleMSG(nn.Module):
         from mmdet3d.models.losses import ChamferDistance
         self.chamfer_distance = ChamferDistance(
             mode='l2',
-            reduction='sum',
+            reduction='mean',
             loss_src_weight=1.0,
             loss_dst_weight=1.0)
 
