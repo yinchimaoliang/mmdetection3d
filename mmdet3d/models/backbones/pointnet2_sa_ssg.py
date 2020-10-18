@@ -146,5 +146,5 @@ class PointNet2SASSG(BasePointNet):
             fp_xyz=fp_xyz,
             fp_features=fp_features,
             fp_indices=fp_indices,
-            losses=losses / 500)
+            losses=losses * 500)
         return ret
