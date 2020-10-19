@@ -117,20 +117,23 @@ class PointNet2SASSG(BasePointNet):
         sa_features = [features]
         sa_indices = [indices]
 
-        losses = 0
+        losses = []
         for i in range(self.num_sa):
             cur_xyz, cur_features, cur_indices = self.SA_modules[i](
                 sa_xyz[i], sa_features[i])
             loss_source, loss_target, _, _ = self.chamfer_distance(
                 sa_xyz[0], cur_xyz, return_indices=True)
 
-            losses += loss_source
-            losses += loss_target
+            losses.append(loss_target + loss_source)
             sa_xyz.append(cur_xyz)
             sa_features.append(cur_features)
             sa_indices.append(
                 torch.gather(sa_indices[-1], 1, cur_indices.long()))
 
+        losses = torch.stack(losses)
+        weights = torch.tensor([10, 1, 0.1, 0.1],
+                               dtype=losses.dtype,
+                               device=losses.device)
         fp_xyz = [sa_xyz[-1]]
         fp_features = [sa_features[-1]]
         fp_indices = [sa_indices[-1]]
@@ -146,5 +149,5 @@ class PointNet2SASSG(BasePointNet):
             fp_xyz=fp_xyz,
             fp_features=fp_features,
             fp_indices=fp_indices,
-            losses=losses * 500)
+            losses=torch.sum(losses * weights) * 100)
         return ret
