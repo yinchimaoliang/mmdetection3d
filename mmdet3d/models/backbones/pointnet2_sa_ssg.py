@@ -149,5 +149,5 @@ class PointNet2SASSG(BasePointNet):
             fp_xyz=fp_xyz,
             fp_features=fp_features,
             fp_indices=fp_indices,
-            losses=torch.sum(losses * weights) * 100)
+            losses=torch.sum(losses * weights) * 20)
         return ret
