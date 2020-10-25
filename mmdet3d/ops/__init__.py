@@ -3,7 +3,8 @@ from mmcv.ops import (RoIAlign, SigmoidFocalLoss, get_compiler_version,
                       sigmoid_focal_loss)
 
 from .ball_query import ball_query
-from .furthest_point_sample import (Points_Sampler, furthest_point_sample,
+from .furthest_point_sample import (Learnable_Points_Sampler, Points_Sampler,
+                                    furthest_point_sample,
                                     furthest_point_sample_with_dist)
 from .gather_points import gather_points
 from .group_points import (GroupAll, QueryAndGroup, group_points,
@@ -30,5 +31,6 @@ __all__ = [
     'gather_points', 'grouping_operation', 'group_points', 'GroupAll',
     'QueryAndGroup', 'PointSAModule', 'PointSAModuleMSG', 'PointFPModule',
     'points_in_boxes_batch', 'get_compiler_version',
-    'get_compiling_cuda_version', 'Points_Sampler', 'build_sa_module'
+    'get_compiling_cuda_version', 'Points_Sampler', 'build_sa_module',
+    'Learnable_Points_Sampler'
 ]

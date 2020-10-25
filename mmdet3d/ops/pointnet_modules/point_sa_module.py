@@ -4,7 +4,8 @@ from torch import nn as nn
 from torch.nn import functional as F
 from typing import List
 
-from mmdet3d.ops import GroupAll, Points_Sampler, QueryAndGroup, gather_points
+from mmdet3d.ops import (GroupAll, Learnable_Points_Sampler, Points_Sampler,
+                         QueryAndGroup, gather_points)
 from .registry import SA_MODULES
 
 
@@ -53,7 +54,8 @@ class PointSAModuleMSG(nn.Module):
                  use_xyz: bool = True,
                  pool_mod='max',
                  normalize_xyz: bool = False,
-                 bias='auto'):
+                 bias='auto',
+                 use_learnable=False):
         super().__init__()
 
         assert len(radii) == len(sample_nums) == len(mlp_channels)
@@ -79,15 +81,22 @@ class PointSAModuleMSG(nn.Module):
         self.fps_mod_list = fps_mod
         self.fps_sample_range_list = fps_sample_range_list
 
-        self.points_sampler = Points_Sampler(
-            self.num_point, input_features=mlp_channels[0][0] + 3)
+        self.use_learnable = use_learnable
 
-        from mmdet3d.models.losses import ChamferDistance
-        self.chamfer_distance = ChamferDistance(
-            mode='l2',
-            reduction='mean',
-            loss_src_weight=1.0,
-            loss_dst_weight=1.0)
+        if use_learnable:
+            self.points_sampler = Learnable_Points_Sampler(
+                self.num_point, input_features=mlp_channels[0][0] + 3)
+
+            from mmdet3d.models.losses import ChamferDistance
+            self.chamfer_distance = ChamferDistance(
+                mode='l2',
+                reduction='mean',
+                loss_src_weight=1.0,
+                loss_dst_weight=1.0)
+        else:
+            self.points_sampler = Points_Sampler(self.num_point,
+                                                 self.fps_mod_list,
+                                                 self.fps_sample_range_list)
 
         for i in range(len(radii)):
             radius = radii[i]
@@ -160,12 +169,19 @@ class PointSAModuleMSG(nn.Module):
         elif target_xyz is not None:
             new_xyz = target_xyz.contiguous()
         else:
-            new_xyz = self.points_sampler(points_xyz, features)
-            _, _, _, indices = self.chamfer_distance(
-                points_xyz, new_xyz, return_indices=True)
-            # loss.backward(retain_graph=True)
-            new_xyz = gather_points(xyz_flipped, indices.to(
-                torch.int32)).transpose(
+            if self.use_learnable:
+                new_xyz = self.points_sampler(points_xyz, features)
+                _, _, _, indices = self.chamfer_distance(
+                    points_xyz, new_xyz, return_indices=True)
+                # loss.backward(retain_graph=True)
+                new_xyz = gather_points(xyz_flipped, indices.to(
+                    torch.int32)).transpose(
+                        1,
+                        2).contiguous() if self.num_point is not None else None
+
+            else:
+                indices = self.points_sampler(points_xyz, features)
+                new_xyz = gather_points(xyz_flipped, indices).transpose(
                     1, 2).contiguous() if self.num_point is not None else None
 
         for i in range(len(self.groupers)):
@@ -228,7 +244,8 @@ class PointSAModule(PointSAModuleMSG):
                  pool_mod: str = 'max',
                  fps_mod: List[str] = ['D-FPS'],
                  fps_sample_range_list: List[int] = [-1],
-                 normalize_xyz: bool = False):
+                 normalize_xyz: bool = False,
+                 use_learnable: bool = False):
         super().__init__(
             mlp_channels=[mlp_channels],
             num_point=num_point,
@@ -239,4 +256,5 @@ class PointSAModule(PointSAModuleMSG):
             pool_mod=pool_mod,
             fps_mod=fps_mod,
             fps_sample_range_list=fps_sample_range_list,
-            normalize_xyz=normalize_xyz)
+            normalize_xyz=normalize_xyz,
+            use_learnable=use_learnable)

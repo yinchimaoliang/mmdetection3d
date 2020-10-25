@@ -67,7 +67,8 @@ class PointNet2SASSG(BasePointNet):
                     num_sample=num_samples[sa_index],
                     mlp_channels=cur_sa_mlps,
                     norm_cfg=norm_cfg,
-                    cfg=sa_cfg))
+                    cfg=sa_cfg,
+                    use_learnable=True))
             skip_channel_list.append(sa_out_channel)
             sa_in_channel = sa_out_channel
 
