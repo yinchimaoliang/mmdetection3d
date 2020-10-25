@@ -1,4 +1,5 @@
 import torch
+from mmcv.runner import auto_fp16
 from torch import nn as nn
 
 from mmdet3d.ops import PointFPModule, build_sa_module
@@ -102,6 +103,7 @@ class PointNet2SASSG(BasePointNet):
             loss_src_weight=1.0,
             loss_dst_weight=1.0)
 
+    @auto_fp16(apply_to=('points', ))
     def forward(self, points):
         """Forward pass.
 
