@@ -61,7 +61,7 @@ class PointNet2SASSG(BasePointNet):
             cur_sa_mlps = [sa_in_channel] + cur_sa_mlps
             sa_out_channel = cur_sa_mlps[-1]
 
-            if sa_index == 0:
+            if sa_index == 3:
                 self.SA_modules.append(
                     build_sa_module(
                         num_point=num_points[sa_index],
@@ -135,7 +135,7 @@ class PointNet2SASSG(BasePointNet):
             cur_xyz, cur_features, cur_indices = self.SA_modules[i](
                 sa_xyz[i], sa_features[i])
 
-            if i == 0:
+            if i == 3:
                 loss_source, loss_target, _, _ = self.chamfer_distance(
                     sa_xyz[0], cur_xyz, return_indices=True)
 
@@ -156,8 +156,6 @@ class PointNet2SASSG(BasePointNet):
             fp_xyz.append(sa_xyz[self.num_sa - i - 1])
             fp_indices.append(sa_indices[self.num_sa - i - 1])
 
-        import pdb
-        pdb.set_trace()
         ret = dict(
             fp_xyz=fp_xyz,
             fp_features=fp_features,
