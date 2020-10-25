@@ -60,15 +60,26 @@ class PointNet2SASSG(BasePointNet):
             cur_sa_mlps = [sa_in_channel] + cur_sa_mlps
             sa_out_channel = cur_sa_mlps[-1]
 
-            self.SA_modules.append(
-                build_sa_module(
-                    num_point=num_points[sa_index],
-                    radius=radius[sa_index],
-                    num_sample=num_samples[sa_index],
-                    mlp_channels=cur_sa_mlps,
-                    norm_cfg=norm_cfg,
-                    cfg=sa_cfg,
-                    use_learnable=True))
+            if sa_index == 0:
+                self.SA_modules.append(
+                    build_sa_module(
+                        num_point=num_points[sa_index],
+                        radius=radius[sa_index],
+                        num_sample=num_samples[sa_index],
+                        mlp_channels=cur_sa_mlps,
+                        norm_cfg=norm_cfg,
+                        cfg=sa_cfg,
+                        use_learnable=True))
+            else:
+                self.SA_modules.append(
+                    build_sa_module(
+                        num_point=num_points[sa_index],
+                        radius=radius[sa_index],
+                        num_sample=num_samples[sa_index],
+                        mlp_channels=cur_sa_mlps,
+                        norm_cfg=norm_cfg,
+                        cfg=sa_cfg))
+
             skip_channel_list.append(sa_out_channel)
             sa_in_channel = sa_out_channel
 
@@ -122,19 +133,19 @@ class PointNet2SASSG(BasePointNet):
         for i in range(self.num_sa):
             cur_xyz, cur_features, cur_indices = self.SA_modules[i](
                 sa_xyz[i], sa_features[i])
-            loss_source, loss_target, _, _ = self.chamfer_distance(
-                sa_xyz[0], cur_xyz, return_indices=True)
 
-            losses.append(loss_target + loss_source)
+            if i == 0:
+                loss_source, loss_target, _, _ = self.chamfer_distance(
+                    sa_xyz[0], cur_xyz, return_indices=True)
+
+                losses.append(loss_target + loss_source)
             sa_xyz.append(cur_xyz)
             sa_features.append(cur_features)
             sa_indices.append(
                 torch.gather(sa_indices[-1], 1, cur_indices.long()))
 
         losses = torch.stack(losses)
-        weights = torch.tensor([10, 1, 0.1, 0.1],
-                               dtype=losses.dtype,
-                               device=losses.device)
+        weights = torch.tensor([10], dtype=losses.dtype, device=losses.device)
         fp_xyz = [sa_xyz[-1]]
         fp_features = [sa_features[-1]]
         fp_indices = [sa_indices[-1]]
