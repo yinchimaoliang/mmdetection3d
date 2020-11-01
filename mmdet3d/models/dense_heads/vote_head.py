@@ -117,8 +117,9 @@ class VoteHead(nn.Module):
         seed_points = feat_dict['fp_xyz'][-1]
         seed_features = feat_dict['fp_features'][-1]
         seed_indices = feat_dict['fp_indices'][-1]
+        seed_offsets = feat_dict['fp_offsets'][-1]
 
-        return seed_points, seed_features, seed_indices
+        return seed_points, seed_features, seed_indices, seed_offsets
 
     def forward(self, feat_dict, sample_mod):
         """Forward pass.
@@ -141,8 +142,8 @@ class VoteHead(nn.Module):
         """
         assert sample_mod in ['vote', 'seed', 'random', 'spec']
 
-        seed_points, seed_features, seed_indices = self._extract_input(
-            feat_dict)
+        seed_points, seed_features, seed_indices, seed_offsets = \
+            self._extract_input(feat_dict)
 
         # 1. generate vote_points from seed_points
         vote_points, vote_features, vote_offset = self.vote_module(
@@ -150,6 +151,7 @@ class VoteHead(nn.Module):
         results = dict(
             seed_points=seed_points,
             seed_indices=seed_indices,
+            seed_offsets=seed_offsets,
             vote_points=vote_points,
             vote_features=vote_features,
             vote_offset=vote_offset)
@@ -188,7 +190,7 @@ class VoteHead(nn.Module):
                 f'Sample mode {sample_mod} is not supported!')
 
         vote_aggregation_ret = self.vote_aggregation(**aggregation_inputs)
-        aggregated_points, features, aggregated_indices = \
+        aggregated_points, features, aggregated_indices, _ = \
             vote_aggregation_ret
 
         results['aggregated_points'] = aggregated_points
@@ -250,6 +252,7 @@ class VoteHead(nn.Module):
         vote_loss = self.vote_module.get_loss(bbox_preds['seed_points'],
                                               bbox_preds['vote_points'],
                                               bbox_preds['seed_indices'],
+                                              bbox_preds['seed_offsets'],
                                               vote_target_masks, vote_targets)
 
         # calculate objectness loss
