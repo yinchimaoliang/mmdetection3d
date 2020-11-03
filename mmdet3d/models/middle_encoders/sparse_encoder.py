@@ -1,3 +1,4 @@
+import torchsparse
 from mmcv.runner import auto_fp16
 from torch import nn as nn
 
@@ -106,9 +107,8 @@ class SparseEncoder(nn.Module):
             dict: Backbone features.
         """
         coors = coors.int()
-        input_sp_tensor = spconv.SparseConvTensor(voxel_features, coors,
-                                                  self.sparse_shape,
-                                                  batch_size)
+        input_sp_tensor = torchsparse.utils.sparse_quantize(
+            voxel_features, coors, self.sparse_shape, batch_size)
         x = self.conv_input(input_sp_tensor)
 
         encode_features = []

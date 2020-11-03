@@ -1,5 +1,6 @@
-from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.cnn import build_conv_layer
 from torch import nn
+from torchsparse import nn as spnn
 
 from mmdet3d.ops import spconv
 from mmdet.models.backbones.resnet import BasicBlock, Bottleneck
@@ -159,27 +160,39 @@ def make_sparse_convmodule(in_channels,
                     'SparseInverseConv3d', 'SparseInverseConv2d',
                     'SparseInverseConv1d'
             ]:
+                if conv_type == 'SubMConv3d':
+                    layers.append(
+                        spnn.Conv3d(
+                            in_channels,
+                            out_channels,
+                            kernel_size,
+                            stride=stride,
+                        ))
+                else:
+                    layers.append(
+                        build_conv_layer(
+                            conv_cfg,
+                            in_channels,
+                            out_channels,
+                            kernel_size,
+                            stride=stride,
+                            padding=padding,
+                            bias=False))
+            else:
+                # if conv_type == 'SparseInverseConv3d':
+                #     layers.append(torchsparse.Su)
                 layers.append(
-                    build_conv_layer(
-                        conv_cfg,
+                    spnn.Conv3d(
                         in_channels,
                         out_channels,
                         kernel_size,
                         stride=stride,
-                        padding=padding,
-                        bias=False))
-            else:
-                layers.append(
-                    build_conv_layer(
-                        conv_cfg,
-                        in_channels,
-                        out_channels,
-                        kernel_size,
-                        bias=False))
+                    ))
         elif layer == 'norm':
-            layers.append(build_norm_layer(norm_cfg, out_channels)[1])
+            layers.append(spnn.BatchNorm(out_channels))
+            # layers.append(build_norm_layer(norm_cfg, out_channels)[1])
         elif layer == 'act':
-            layers.append(nn.ReLU(inplace=True))
-
-    layers = spconv.SparseSequential(*layers)
+            # layers.append(nn.ReLU(inplace=True))
+            layers.append(spnn.ReLU(inplace=True))
+    layers = nn.Sequential(*layers)
     return layers
