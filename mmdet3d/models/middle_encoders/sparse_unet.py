@@ -4,7 +4,6 @@ from mmcv.runner import auto_fp16
 from torch import nn as nn
 
 from mmdet3d.ops import SparseBasicBlock, make_sparse_convmodule
-from mmdet3d.ops import spconv as spconv
 from ..registry import MIDDLE_ENCODERS
 
 
@@ -87,8 +86,8 @@ class SparseUNet(nn.Module):
         self.conv_out = make_sparse_convmodule(
             encoder_out_channels,
             self.output_channels,
-            kernel_size=(3, 1, 1),
-            stride=(2, 1, 1),
+            kernel_size=3,
+            stride=2,
             norm_cfg=norm_cfg,
             padding=0,
             indice_key='spconv_down2',
@@ -198,7 +197,7 @@ class SparseUNet(nn.Module):
         Returns:
             int: The number of encoder output channels.
         """
-        self.encoder_layers = spconv.SparseSequential()
+        self.encoder_layers = nn.Sequential()
 
         for i, blocks in enumerate(self.encoder_channels):
             blocks_list = []
@@ -229,7 +228,7 @@ class SparseUNet(nn.Module):
                             conv_type='SubMConv3d'))
                 in_channels = out_channels
             stage_name = f'encoder_layer{i + 1}'
-            stage_layers = spconv.SparseSequential(*blocks_list)
+            stage_layers = nn.Sequential(*blocks_list)
             self.encoder_layers.add_module(stage_name, stage_layers)
         return out_channels
 

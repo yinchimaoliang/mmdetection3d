@@ -160,7 +160,7 @@ def make_sparse_convmodule(in_channels,
                     'SparseInverseConv3d', 'SparseInverseConv2d',
                     'SparseInverseConv1d'
             ]:
-                if conv_type == 'SubMConv3d':
+                if conv_type == 'SubMConv3d' or conv_type == 'SparseConv3d':
                     layers.append(
                         spnn.Conv3d(
                             in_channels,
