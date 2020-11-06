@@ -47,8 +47,7 @@ class Learnable_Points_Sampler(nn.Module):
             out_channels=mid_features)
         self.bn = nn.BatchNorm1d(num_features=mid_features)
         self.relu = nn.ReLU(inplace=True)
-        self.fc_xyz = nn.Linear(mid_features, num_point[0] * 3)
-        self.fc_features = nn.Linear(mid_features, num_point[0] * out_features)
+        self.fc = nn.Linear(mid_features, num_point[0] * (3 + out_features))
 
     def forward(self, points_xyz, features):
         points_xyz = torch.transpose(points_xyz, 2, 1)
@@ -56,14 +55,11 @@ class Learnable_Points_Sampler(nn.Module):
         mid_features = F.max_pool1d(
             self.relu(self.bn(self.mlp(points))),
             kernel_size=points_xyz.shape[2])
-        final_xyz = self.fc_xyz(
-            mid_features.reshape((mid_features.shape[0], -1)))
-        final_features = self.fc_features(
-            mid_features.reshape((mid_features.shape[0], -1)))
-        new_xyz = final_xyz.reshape(
-            (points_xyz.shape[0], self.num_point[0], -1))
-        new_features = final_features.reshape(
-            (points_xyz.shape[0], -1, self.num_point[0]))
+        final_features = self.fc(
+            mid_features.reshape((mid_features.shape[0], -1))).reshape(
+                (points_xyz.shape[0], self.num_point[0], -1))
+        new_xyz = final_features[..., :3].contiguous()
+        new_features = final_features[..., 3:].transpose(1, 2).contiguous()
         return new_xyz, new_features
 
 
