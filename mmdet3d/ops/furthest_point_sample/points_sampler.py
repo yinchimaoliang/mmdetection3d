@@ -63,7 +63,7 @@ class Learnable_Points_Sampler(nn.Module):
         new_xyz = final_xyz.reshape(
             (points_xyz.shape[0], self.num_point[0], -1))
         new_features = final_features.reshape(
-            (points_xyz.shape[0], self.num_point[0], -1))
+            (points_xyz.shape[0], -1, self.num_point[0]))
         return new_xyz, new_features
 
 

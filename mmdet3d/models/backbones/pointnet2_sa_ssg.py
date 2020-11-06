@@ -55,13 +55,15 @@ class PointNet2SASSG(BasePointNet):
         self.SA_modules = nn.ModuleList()
         sa_in_channel = in_channels - 3  # number of channels without xyz
         skip_channel_list = [sa_in_channel]
+        out_features = [128, 256, 256, 256]
 
         for sa_index in range(self.num_sa):
             cur_sa_mlps = list(sa_channels[sa_index])
             cur_sa_mlps = [sa_in_channel] + cur_sa_mlps
             sa_out_channel = cur_sa_mlps[-1]
 
-            if sa_index == 3:
+            if sa_index == 0 or sa_index == 1 or sa_index == 2 \
+                    or sa_index == 3:
                 self.SA_modules.append(
                     build_sa_module(
                         num_point=num_points[sa_index],
@@ -70,7 +72,8 @@ class PointNet2SASSG(BasePointNet):
                         mlp_channels=cur_sa_mlps,
                         norm_cfg=norm_cfg,
                         cfg=sa_cfg,
-                        use_learnable=True))
+                        use_learnable=True,
+                        out_features=out_features[sa_index]))
             else:
                 self.SA_modules.append(
                     build_sa_module(
@@ -136,7 +139,7 @@ class PointNet2SASSG(BasePointNet):
             cur_xyz, cur_features, cur_indices, cur_offset = self.SA_modules[
                 i](sa_xyz[i], sa_features[i])
 
-            if i == 3:
+            if i == 0 or i == 1 or i == 2 or i == 3:
                 loss_source, loss_target, _, _ = self.chamfer_distance(
                     sa_xyz[0], cur_xyz, return_indices=True)
 

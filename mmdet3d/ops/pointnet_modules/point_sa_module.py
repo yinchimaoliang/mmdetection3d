@@ -55,7 +55,8 @@ class PointSAModuleMSG(nn.Module):
                  pool_mod='max',
                  normalize_xyz: bool = False,
                  bias='auto',
-                 use_learnable=False):
+                 use_learnable=False,
+                 out_features=256):
         super().__init__()
 
         assert len(radii) == len(sample_nums) == len(mlp_channels)
@@ -85,7 +86,9 @@ class PointSAModuleMSG(nn.Module):
 
         if use_learnable:
             self.points_sampler = Learnable_Points_Sampler(
-                self.num_point, input_features=mlp_channels[0][0] + 3)
+                self.num_point,
+                input_features=mlp_channels[0][0] + 3,
+                out_features=out_features)
 
             from mmdet3d.models.losses import ChamferDistance
             self.chamfer_distance = ChamferDistance(
@@ -176,7 +179,7 @@ class PointSAModuleMSG(nn.Module):
                 offset = new_xyz - torch.gather(
                     points_xyz, 1,
                     indices.unsqueeze(2).expand(-1, -1, 3).long())
-                return new_xyz, features, indices, offset
+                return new_xyz, new_features, indices, offset
                 # loss.backward(retain_graph=True)
             else:
                 indices = self.points_sampler(points_xyz, features)
@@ -248,7 +251,8 @@ class PointSAModule(PointSAModuleMSG):
                  fps_mod: List[str] = ['D-FPS'],
                  fps_sample_range_list: List[int] = [-1],
                  normalize_xyz: bool = False,
-                 use_learnable: bool = False):
+                 use_learnable: bool = False,
+                 out_features=256):
         super().__init__(
             mlp_channels=[mlp_channels],
             num_point=num_point,
@@ -260,4 +264,5 @@ class PointSAModule(PointSAModuleMSG):
             fps_mod=fps_mod,
             fps_sample_range_list=fps_sample_range_list,
             normalize_xyz=normalize_xyz,
-            use_learnable=use_learnable)
+            use_learnable=use_learnable,
+            out_features=out_features)
