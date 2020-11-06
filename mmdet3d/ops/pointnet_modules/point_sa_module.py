@@ -169,9 +169,14 @@ class PointSAModuleMSG(nn.Module):
             new_xyz = target_xyz.contiguous()
         else:
             if self.use_learnable:
-                new_xyz = self.points_sampler(points_xyz, features)
+                new_xyz, new_features = self.points_sampler(
+                    points_xyz, features)
                 _, _, _, indices = self.chamfer_distance(
                     points_xyz, new_xyz, return_indices=True)
+                offset = new_xyz - torch.gather(
+                    points_xyz, 1,
+                    indices.unsqueeze(2).expand(-1, -1, 3).long())
+                return new_xyz, features, indices, offset
                 # loss.backward(retain_graph=True)
             else:
                 indices = self.points_sampler(points_xyz, features)
