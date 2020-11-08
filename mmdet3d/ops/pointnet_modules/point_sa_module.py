@@ -179,7 +179,10 @@ class PointSAModuleMSG(nn.Module):
                 offset = new_xyz - torch.gather(
                     points_xyz, 1,
                     indices.unsqueeze(2).expand(-1, -1, 3).long())
-                return new_xyz, new_features, indices, offset
+                return torch.gather(
+                    points_xyz, 1,
+                    indices.unsqueeze(2).expand(
+                        -1, -1, 3).long()), new_features, indices, offset
                 # loss.backward(retain_graph=True)
             else:
                 indices = self.points_sampler(points_xyz, features)

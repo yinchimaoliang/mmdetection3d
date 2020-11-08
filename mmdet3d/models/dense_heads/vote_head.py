@@ -148,6 +148,8 @@ class VoteHead(nn.Module):
         # 1. generate vote_points from seed_points
         vote_points, vote_features, vote_offset = self.vote_module(
             seed_points, seed_features)
+        vote_points += seed_offsets
+        vote_offset += seed_offsets.transpose(2, 1)
         results = dict(
             seed_points=seed_points,
             seed_indices=seed_indices,
@@ -252,7 +254,6 @@ class VoteHead(nn.Module):
         vote_loss = self.vote_module.get_loss(bbox_preds['seed_points'],
                                               bbox_preds['vote_points'],
                                               bbox_preds['seed_indices'],
-                                              bbox_preds['seed_offsets'],
                                               vote_target_masks, vote_targets)
 
         # calculate objectness loss
