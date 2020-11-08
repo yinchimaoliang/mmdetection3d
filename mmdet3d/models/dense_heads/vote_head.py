@@ -14,6 +14,14 @@ from mmdet.models import HEADS
 from .base_conv_bbox_head import BaseConvBboxHead
 
 
+def hook_fn_backward(module, grad_input, grad_output):
+    print('votehead')  # 为了区分模块
+    # 为了符合反向传播的顺序，我们先打印 grad_output
+    print('grad_output', len(grad_output))
+    # 再打印 grad_input
+    print('grad_input', len(grad_input))
+
+
 @HEADS.register_module()
 class VoteHead(nn.Module):
     r"""Bbox head of `Votenet <https://arxiv.org/abs/1904.09664>`_.
@@ -86,6 +94,9 @@ class VoteHead(nn.Module):
             **pred_layer_cfg,
             num_cls_out_channels=self._get_cls_out_channels(),
             num_reg_out_channels=self._get_reg_out_channels())
+
+        for name, module in self.conv_pred.named_children():
+            module.register_backward_hook(hook_fn_backward)
 
     def init_weights(self):
         """Initialize weights of VoteHead."""

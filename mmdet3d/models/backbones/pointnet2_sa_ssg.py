@@ -7,6 +7,14 @@ from mmdet.models import BACKBONES
 from .base_pointnet import BasePointNet
 
 
+def hook_fn_backward(module, grad_input, grad_output):
+    print('FP in pointnet2')  # 为了区分模块
+    # 为了符合反向传播的顺序，我们先打印 grad_output
+    print('grad_output', grad_output[0].dtype)
+    # 再打印 grad_input
+    print('grad_input', grad_input[0].dtype)
+
+
 @BACKBONES.register_module()
 class PointNet2SASSG(BasePointNet):
     """PointNet2 with Single-scale grouping.
@@ -62,8 +70,7 @@ class PointNet2SASSG(BasePointNet):
             cur_sa_mlps = [sa_in_channel] + cur_sa_mlps
             sa_out_channel = cur_sa_mlps[-1]
 
-            if sa_index == 0 or sa_index == 1 or sa_index == 2 \
-                    or sa_index == 3:
+            if sa_index == 3:
                 self.SA_modules.append(
                     build_sa_module(
                         num_point=num_points[sa_index],
@@ -74,6 +81,7 @@ class PointNet2SASSG(BasePointNet):
                         cfg=sa_cfg,
                         use_learnable=True,
                         out_features=out_features[sa_index]))
+
             else:
                 self.SA_modules.append(
                     build_sa_module(
@@ -95,6 +103,8 @@ class PointNet2SASSG(BasePointNet):
             cur_fp_mlps = list(fp_channels[fp_index])
             cur_fp_mlps = [fp_source_channel + fp_target_channel] + cur_fp_mlps
             self.FP_modules.append(PointFPModule(mlp_channels=cur_fp_mlps))
+            for name, module in self.FP_modules[-1].named_children():
+                module.register_backward_hook(hook_fn_backward)
             if fp_index != len(fp_channels) - 1:
                 fp_source_channel = cur_fp_mlps[-1]
                 fp_target_channel = skip_channel_list.pop()
@@ -134,16 +144,16 @@ class PointNet2SASSG(BasePointNet):
         sa_features = [features]
         sa_indices = [indices]
         sa_offsets = [xyz.new_zeros(xyz.shape)]
-
+        losses = 0
         for i in range(self.num_sa):
             cur_xyz, cur_features, cur_indices, cur_offset = self.SA_modules[
                 i](sa_xyz[i], sa_features[i])
 
-            if i == 0 or i == 1 or i == 2 or i == 3:
+            if i == 3:
                 loss_source, loss_target, _, _ = self.chamfer_distance(
                     sa_xyz[0], cur_xyz, return_indices=True)
 
-                losses = loss_target + loss_source
+                losses += loss_target + loss_source
             sa_xyz.append(cur_xyz)
             sa_features.append(cur_features)
             sa_indices.append(

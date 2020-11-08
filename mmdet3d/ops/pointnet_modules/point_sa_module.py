@@ -9,6 +9,24 @@ from mmdet3d.ops import (GroupAll, Learnable_Points_Sampler, Points_Sampler,
 from .registry import SA_MODULES
 
 
+def mlp_fn_backward(module, grad_input, grad_output):
+    print('mlp in sa module')
+    # print(module) # 为了区分模块
+    # 为了符合反向传播的顺序，我们先打印 grad_output
+    print('grad_output', len(grad_output))
+    # 再打印 grad_input
+    print('grad_input', len(grad_input))
+
+
+def hook_fn_backward(module, grad_input, grad_output):
+    print('points sampler')
+    # print(module) # 为了区分模块
+    # 为了符合反向传播的顺序，我们先打印 grad_output
+    print('grad_output', len(grad_output))
+    # 再打印 grad_input
+    print('grad_input', len(grad_input))
+
+
 @SA_MODULES.register_module()
 class PointSAModuleMSG(nn.Module):
     """Point set abstraction module with multi-scale grouping used in
@@ -90,12 +108,24 @@ class PointSAModuleMSG(nn.Module):
                 input_features=mlp_channels[0][0] + 3,
                 out_features=out_features)
 
+            for name, module in self.points_sampler.named_children():
+                module.register_backward_hook(hook_fn_backward)
             from mmdet3d.models.losses import ChamferDistance
             self.chamfer_distance = ChamferDistance(
                 mode='l2',
                 reduction='mean',
                 loss_src_weight=1.0,
                 loss_dst_weight=1.0)
+
+            self.mlp = ConvModule(
+                out_features + 3,
+                out_features,
+                kernel_size=(1),
+                stride=(1),
+                conv_cfg=dict(type='Conv1d'),
+                norm_cfg=dict(type='BN1d'),
+                bias=bias)
+            return
         else:
             self.points_sampler = Points_Sampler(self.num_point,
                                                  self.fps_mod_list,
@@ -135,6 +165,7 @@ class PointSAModuleMSG(nn.Module):
                         conv_cfg=dict(type='Conv2d'),
                         norm_cfg=norm_cfg,
                         bias=bias))
+                mlp[-1].register_backward_hook(mlp_fn_backward)
             self.mlps.append(mlp)
 
     def forward(
@@ -174,12 +205,20 @@ class PointSAModuleMSG(nn.Module):
             if self.use_learnable:
                 new_xyz, new_features = self.points_sampler(
                     points_xyz, features)
+                new_features = torch.cat(
+                    [new_xyz.transpose(1, 2).contiguous(), new_features],
+                    dim=1)
+                new_features = self.mlp(new_features)
                 _, _, _, indices = self.chamfer_distance(
                     points_xyz, new_xyz, return_indices=True)
+                origin_xyz = gather_points(xyz_flipped, indices.to(
+                    torch.int32)).transpose(
+                        1,
+                        2).contiguous() if self.num_point is not None else None
                 offset = new_xyz - torch.gather(
                     points_xyz, 1,
                     indices.unsqueeze(2).expand(-1, -1, 3).long())
-                return new_xyz, new_features, indices, offset
+                return origin_xyz, new_features, indices, offset
                 # loss.backward(retain_graph=True)
             else:
                 indices = self.points_sampler(points_xyz, features)
@@ -188,7 +227,8 @@ class PointSAModuleMSG(nn.Module):
 
         for i in range(len(self.groupers)):
             # (B, C, num_point, nsample)
-            new_features = self.groupers[i](points_xyz, new_xyz, features)
+            if not self.use_learnable:
+                new_features = self.groupers[i](points_xyz, new_xyz, features)
 
             # (B, mlp[-1], num_point, nsample)
             new_features = self.mlps[i](new_features)
