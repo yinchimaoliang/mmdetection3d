@@ -55,10 +55,11 @@ class PointFPModule(nn.Module):
             Tensor: (B, M, N) M = mlp[-1], tensor of the target features.
         """
         if source is not None:
-            dist, idx = three_nn(target, source)
-            dist_reciprocal = 1.0 / (dist + 1e-8)
-            norm = torch.sum(dist_reciprocal, dim=2, keepdim=True)
-            weight = dist_reciprocal / norm
+            with torch.no_grad():
+                dist, idx = three_nn(target, source)
+                dist_reciprocal = 1.0 / (dist + 1e-8)
+                norm = torch.sum(dist_reciprocal, dim=2, keepdim=True)
+                weight = dist_reciprocal / norm
 
             interpolated_feats = three_interpolate(source_feats, idx, weight)
         else:
